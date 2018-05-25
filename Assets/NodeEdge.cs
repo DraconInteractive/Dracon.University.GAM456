@@ -4,13 +4,5 @@ using UnityEngine;
 
 public class NodeEdge : MonoBehaviour {
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    public Tile endNode;
 }

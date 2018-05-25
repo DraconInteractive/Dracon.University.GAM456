@@ -7,6 +7,8 @@ public class Node : MonoBehaviour {
     public Vector3 position;
     public List<NodeEdge> edges = new List<NodeEdge>();
     public Tile tile;
+
+    public bool edgeCalculated = false;
     public Node ()
     {
         edges = new List<NodeEdge>();
@@ -21,6 +23,10 @@ public class Node : MonoBehaviour {
         }
     }
 
+    private void Awake()
+    {
+        edgeCalculated = false;
+    }
     private void Start()
     {
         if (tile.Type == Tile.TileType.Obstructed)
