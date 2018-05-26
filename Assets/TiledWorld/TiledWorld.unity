@@ -210,7 +210,7 @@ MonoBehaviour:
   TilePalette:
   - Prefab: {fileID: 1176057670870750, guid: 7b211641d6f7340ed96e621112da9f8b, type: 2}
     Frequency: 20
-  - Prefab: {fileID: 1009333211930078, guid: 902788dea7766489e8284b5f894d79f5, type: 2}
+  - Prefab: {fileID: 1904752828237086, guid: 902788dea7766489e8284b5f894d79f5, type: 2}
     Frequency: 5
   Length: 40
   Width: 20
@@ -240,8 +240,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodes: []
   edges: []
-  edgeRange: 1.5
+  edgeRange: 1.1
   edgePrefab: {fileID: 1001575856534802, guid: a17a356b22cf9064d9c82236e46ef0b8, type: 2}
+  path: []
   type: 0
   useVisualisation: 0
 --- !u!114 &747488160
@@ -257,6 +258,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerPrefab: {fileID: 1165010202646896, guid: 20e1da8fbc9b13147a210eba20a1aa81,
     type: 2}
+  seeker: {fileID: 0}
+  target: {fileID: 0}
 --- !u!1 &1045548244
 GameObject:
   m_ObjectHideFlags: 0

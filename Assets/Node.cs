@@ -9,6 +9,11 @@ public class Node : MonoBehaviour {
     public Tile tile;
 
     public bool edgeCalculated = false;
+
+    public int gCost;
+    public int hCost;
+
+    public Node parent;
     public Node ()
     {
         edges = new List<NodeEdge>();
@@ -33,6 +38,14 @@ public class Node : MonoBehaviour {
         {
             NodeController.controller.nodes.Remove(this);
             Destroy(this.gameObject);
+        }
+    }
+
+    public int fCost
+    {
+        get
+        {
+            return gCost + hCost;
         }
     }
 }

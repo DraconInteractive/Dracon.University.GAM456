@@ -12,6 +12,8 @@ public class NodeController : MonoBehaviour {
 
     public GameObject edgePrefab;
 
+    public List<Node> path;
+
     public enum GenerationType
     {
         Linear,
@@ -44,6 +46,21 @@ public class NodeController : MonoBehaviour {
 	void Update () {
 		
 	}
+
+    private void OnDrawGizmos()
+    {
+        if (path != null)
+        {
+            foreach (Node n in path)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawSphere(n.position + Vector3.up * 0.75f, 0.1f);
+                Gizmos.color = Color.red;
+                Gizmos.DrawLine(n.position + Vector3.up * 0.75f, n.parent.position + Vector3.up * 0.75f);
+            }
+        }
+        
+    }
     //Note, I will use yield return null for both of these as it helps me visualise it. Probs just faster to remove it, but for now im keeping :) might put in a bool toggle for it though. 
     IEnumerator CreateEdges ()
     {
@@ -190,5 +207,33 @@ public class NodeController : MonoBehaviour {
         yield break;
     }
 
+    public List<Node> GetNeighbours (Node node)
+    {
+        List<Node> neighbours = new List<Node>();
+        foreach (Node n in nodes)
+        {
+            if (Vector3.Distance(n.position, node.position) < edgeRange)
+            {
+                neighbours.Add(n);
+            }
+        }
+        return neighbours;
+    }
 
+    public Node GetNodeFromWorldPos (Vector3 pos)
+    {
+        float f = Mathf.Infinity;
+        Node focus = null;
+        foreach (Node n in nodes)
+        {
+            float h = Vector3.Distance(n.position, pos);
+            if (h < f)
+            {
+                f = h;
+                focus = n;
+            }
+        }
+
+        return focus;
+    }
 }
