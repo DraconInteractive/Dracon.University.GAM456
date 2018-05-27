@@ -23,6 +23,9 @@ public class NodeController : MonoBehaviour {
     public GenerationType type;
 
     public bool useVisualisation;
+    public int visCounter, visCounterTarget;
+
+    public LayerMask obstructionMask;
     void Awake ()
     {
         controller = this;
@@ -72,23 +75,47 @@ public class NodeController : MonoBehaviour {
             {
                 if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node)
                 {
-                    NodeEdge e = Instantiate(edgePrefab, (node.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
-                    LineRenderer l = e.gameObject.GetComponent<LineRenderer>();
-                    l.positionCount = 2;
-                    l.SetPosition(0, node.transform.position);
-                    l.SetPosition(1, n.transform.position);
+                    
+                    Ray ray = new Ray(node.position, n.position - node.position);
+                    RaycastHit hit;
+                    //if (Physics.Raycast(ray, out hit, 2))
+                    //{
 
-                    edges.Add(e);
-                    node.edges.Add(e);
+                    //}
+                    if (Physics.SphereCast(ray, 0.25f, out hit, 2, obstructionMask))
+                    {
+
+                    }
+                    else
+                    {
+                        NodeEdge e = Instantiate(edgePrefab, (node.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
+                        LineRenderer l = e.gameObject.GetComponent<LineRenderer>();
+                        l.positionCount = 2;
+                        l.SetPosition(0, node.transform.position);
+                        l.SetPosition(1, n.transform.position);
+
+                        edges.Add(e);
+                        node.edges.Add(e);
+                    }
+                    
                 }
             }
             if (useVisualisation)
             {
-                yield return null;
+                if (visCounter >= visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
+                }
+                else
+                {
+                    visCounter++;
+                }
             }
             
         }
-
+        StartCoroutine(MovementController.controller.DoTheThing());
+        print("linear done");
         yield break;
     }
 
@@ -120,7 +147,7 @@ public class NodeController : MonoBehaviour {
             //Overall, iterate through all active nodes to see if they can be connected to any other nodes. This presents a simpler interface than linear, but it also has some weird discrepancies. Need to work on those. 
             foreach (Node node in currentNodes)
             {
-                //Pretty sure this might not be working atm, but i need to check it when im awake. 
+                //Pretty sure this might not be working atm, but i need to check it when im awake. *EDIT I think Ive actually forgotton to SET the node edges... oops, didnt need them for my other algorithm till now.
                 foreach (Node n in allNodes)
                 {
                     bool edgeExists = false;
@@ -142,6 +169,7 @@ public class NodeController : MonoBehaviour {
                     if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node && !edgeExists && !currentNodes.Contains(n) && !n.edgeCalculated)
                     {
                         NodeEdge e = Instantiate(edgePrefab, (node.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
+                        e.endNode = n;
                         LineRenderer l = e.gameObject.GetComponent<LineRenderer>();
                         l.positionCount = 2;
                         l.SetPosition(0, node.transform.position);
@@ -159,9 +187,17 @@ public class NodeController : MonoBehaviour {
                     }
                 }
             }
-            if (useVisualisation)
+            if (useVisualisation && visCounter >= visCounterTarget)
             {
-                yield return null;
+                if (visCounter >= visCounterTarget)
+                {
+                    yield return null;
+                }
+                else
+                {
+                    visCounter++;
+                }
+                
             }
 
             //Remove considered nodes as it goes - makes it go faster as it progresses, good for big maps. 
@@ -204,19 +240,41 @@ public class NodeController : MonoBehaviour {
             }
         }
         print("finished vine generation");
+        MovementController.controller.StartCoroutine(MovementController.controller.DoTheThing());
         yield break;
     }
 
     public List<Node> GetNeighbours (Node node)
     {
+        
         List<Node> neighbours = new List<Node>();
+        
         foreach (Node n in nodes)
         {
             if (Vector3.Distance(n.position, node.position) < edgeRange)
             {
-                neighbours.Add(n);
+                RaycastHit hit;
+                if (Physics.SphereCast(new Ray(node.position, n.position - node.position), 0.25f, out hit, 1, obstructionMask))
+                {
+
+                }
+                else
+                {
+                    neighbours.Add(n);
+                }
+                
             }
         }
+        //Ill get this working later i think...
+        /*
+        foreach (NodeEdge edge in node.edges)
+        {
+            if (edge.endNode != node)
+            {
+                neighbours.Add(edge.endNode);
+            }
+        }
+        */
         return neighbours;
     }
 

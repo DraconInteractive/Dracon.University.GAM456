@@ -106,7 +106,7 @@ public class TiledWorldGenerator : MonoBehaviour {
 				}
 
 				// instantiate the prefab
-				GameObject newTile = Instantiate(prefab, Vector3.forward * lengthIndex + Vector3.right * widthIndex, Quaternion.identity);
+				GameObject newTile = Instantiate(prefab, Vector3.forward * lengthIndex + Vector3.right * widthIndex + Vector3.up * Random.Range(0.0f, 0.5f), Quaternion.identity);
 				newTile.transform.SetParent(transform);
 				world[lengthIndex * Width + widthIndex] = newTile.GetComponent<Tile>();
 			}

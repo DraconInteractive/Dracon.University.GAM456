@@ -12,6 +12,7 @@ public class MovementController : MonoBehaviour {
 
     public Transform seeker, target;
 
+    public LineRenderer pathRenderer;
     private void Awake()
     {
         controller = this;
@@ -19,7 +20,7 @@ public class MovementController : MonoBehaviour {
     // Use this for initialization
     void Start () {
         nController = NodeController.controller;
-        StartCoroutine(DoTheThing());
+        //StartCoroutine(DoTheThing());
 	}
 	
 	// Update is called once per frame
@@ -131,6 +132,21 @@ public class MovementController : MonoBehaviour {
         path.Reverse();
 
         nController.path = path;
+
+        if (pathRenderer == null)
+        {
+            GameObject newObject = new GameObject("PathRenderer");
+            pathRenderer = newObject.AddComponent<LineRenderer>();
+            pathRenderer.startWidth = 0.1f;
+            pathRenderer.endWidth = 0.1f;
+        }
+
+        pathRenderer.useWorldSpace = true;
+        pathRenderer.positionCount = path.Count;
+        for (int i = 0; i < path.Count; i++)
+        {
+            pathRenderer.SetPosition(i, path[i].position + Vector3.up * 0.75f);
+        }
     }
 
 }

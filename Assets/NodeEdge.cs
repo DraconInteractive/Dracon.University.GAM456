@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class NodeEdge : MonoBehaviour {
 
-    public Tile endNode;
+    public Node endNode;
 }
