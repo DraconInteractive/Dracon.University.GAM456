@@ -56,7 +56,7 @@ public class MovementController : MonoBehaviour {
         List<Node> openSet = new List<Node>();
         HashSet<Node> closedSet = new HashSet<Node>();
         openSet.Add(start);
-
+        bool foundPath = false;
         while (openSet.Count > 0)
         {
             Node currentNode = openSet[0];
@@ -74,6 +74,7 @@ public class MovementController : MonoBehaviour {
             if (currentNode == end)
             {
                 RetracePath(start, end);
+                foundPath = true;
                 return;
             }
 
@@ -99,7 +100,13 @@ public class MovementController : MonoBehaviour {
                 }
             }
         }
+        if (!foundPath)
+        {
+            player.transform.position = nController.nodes[Random.Range(0, nController.nodes.Count)].position + Vector3.up * 1;
+            goal.transform.position = nController.nodes[Random.Range(0, nController.nodes.Count)].position + Vector3.up * 1;
+            GeneratePath(nController.GetNodeFromWorldPos(seeker.position), nController.GetNodeFromWorldPos(target.position));
 
+        }
 
         return;
     }
@@ -147,6 +154,8 @@ public class MovementController : MonoBehaviour {
         {
             pathRenderer.SetPosition(i, path[i].position + Vector3.up * 0.75f);
         }
+
+        Game_Controller.controller.StartHidePathing();
     }
 
 }

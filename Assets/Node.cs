@@ -34,6 +34,10 @@ public class Node : MonoBehaviour {
     }
     private void Start()
     {
+        if (tile == null)
+        {
+            return;
+        }
         if (tile.Type == Tile.TileType.Obstructed)
         {
             NodeController.controller.nodes.Remove(this);

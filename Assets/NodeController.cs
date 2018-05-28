@@ -26,6 +26,8 @@ public class NodeController : MonoBehaviour {
     public int visCounter, visCounterTarget;
 
     public LayerMask obstructionMask;
+
+    public bool vertFeed;
     void Awake ()
     {
         controller = this;
@@ -33,16 +35,10 @@ public class NodeController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        if (type == GenerationType.Linear)
+        if (!vertFeed)
         {
-            StartCoroutine(CreateEdges());
+            DoEdges();
         }
-        else if (type == GenerationType.Vine)
-        {
-            StartCoroutine(CreateEdgesVineLike());
-        }
-        
-        
     }
 	
 	// Update is called once per frame
@@ -63,6 +59,18 @@ public class NodeController : MonoBehaviour {
             }
         }
         
+    }
+
+    public void DoEdges ()
+    {
+        if (type == GenerationType.Linear)
+        {
+            StartCoroutine(CreateEdges());
+        }
+        else if (type == GenerationType.Vine)
+        {
+            StartCoroutine(CreateEdgesVineLike());
+        }
     }
     //Note, I will use yield return null for both of these as it helps me visualise it. Probs just faster to remove it, but for now im keeping :) might put in a bool toggle for it though. 
     IEnumerator CreateEdges ()
@@ -114,7 +122,11 @@ public class NodeController : MonoBehaviour {
             }
             
         }
-        StartCoroutine(MovementController.controller.DoTheThing());
+        if (MovementController.controller != null)
+        {
+            StartCoroutine(MovementController.controller.DoTheThing());
+        }
+        
         print("linear done");
         yield break;
     }

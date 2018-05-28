@@ -5,6 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class Game_Controller : MonoBehaviour {
 
+    public static Game_Controller controller;
 	public int gridXSize, gridYSize;
     public Vector3[] vertices;
     private Mesh mesh;
@@ -12,8 +13,20 @@ public class Game_Controller : MonoBehaviour {
 
     public bool useVisualisation;
     public int visCounter, visCounterTarget;
-	// Use this for initialization
-	void Start () {
+
+    public GameObject nodePrefab;
+
+    [Range(0,100)]
+    public float obstructionThreshold;
+
+    public GameObject obstructionPrefab;
+
+    private void Awake()
+    {
+        controller = this;
+    }
+    // Use this for initialization
+    void Start () {
 		StartCoroutine (GenerateMesh ());
 	}
 	
@@ -38,14 +51,15 @@ public class Game_Controller : MonoBehaviour {
                 vertices[i] = new Vector3(x, 0, y);
                 uv[i] = new Vector2((float)x / gridXSize, (float)y / gridYSize);
                 tangents[i] = tangent;
-            }
-            if (useVisualisation)
-            {
-                visCounter++;
-                if (visCounter > visCounterTarget)
+
+                if (useVisualisation)
                 {
-                    visCounter = 0;
-                    yield return null;
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
                 }
             }
         }
@@ -66,14 +80,15 @@ public class Game_Controller : MonoBehaviour {
                 triangles[ti + 4] = triangles[ti + 1] = vi + gridXSize + 1;
                 triangles[ti + 5] = vi + gridXSize + 2;
                 mesh.triangles = triangles;
-            }
-            if (useVisualisation)
-            {
-                visCounter++;
-                if (visCounter > visCounterTarget)
+
+                if (useVisualisation)
                 {
-                    visCounter = 0;
-                    yield return null;
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
                 }
             }
         }
@@ -111,8 +126,20 @@ public class Game_Controller : MonoBehaviour {
     {
         foreach (Vector3 vert in vertices)
         {
-            //Generate Node
+            float f = Random.Range(0, 100);
+            if (f > obstructionThreshold)
+            {
+                Instantiate(obstructionPrefab, vert, Quaternion.identity, this.transform);
+            }
+            else
+            {
+                Node node = Instantiate(nodePrefab, vert + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                NodeController.controller.nodes.Add(node);
 
+                node.position = vert;
+                node.tile = null;
+            }
+           
             if (useVisualisation)
             {
                 visCounter++;
@@ -123,8 +150,29 @@ public class Game_Controller : MonoBehaviour {
                 }
             }
         }
+
+        NodeController.controller.DoEdges();
         yield break;
     }
+
+    public void StartHidePathing ()
+    {
+        StartCoroutine(HidePathing());
+    }
+   IEnumerator HidePathing ()
+   {
+        NodeController nController = NodeController.controller;
+        foreach (Node n in nController.nodes)
+        {
+            n.gameObject.GetComponent<MeshRenderer>().enabled = false;
+        }
+        yield return null;
+        foreach (NodeEdge edge in nController.edges)
+        {
+            edge.gameObject.GetComponent<LineRenderer>().enabled = false;
+        }
+        yield break;
+   }
     /*
     private void OnDrawGizmos()
     {

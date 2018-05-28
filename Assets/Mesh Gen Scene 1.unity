@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -187,8 +187,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 175928550}
-  m_LocalRotation: {x: -0.00008163043, y: 0.9679627, z: -0.2510939, w: -0.0003242791}
-  m_LocalPosition: {x: 10.182059, y: 2.6700177, z: 21.957548}
+  m_LocalRotation: {x: -0.21417718, y: 0.66820896, z: -0.2102293, w: -0.6807559}
+  m_LocalPosition: {x: 64.86528, y: 20.745628, z: 27.115854}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -270,6 +270,8 @@ GameObject:
   - component: {fileID: 1707577682}
   - component: {fileID: 1707577681}
   - component: {fileID: 1707577680}
+  - component: {fileID: 1707577684}
+  - component: {fileID: 1707577685}
   m_Layer: 0
   m_Name: Controller
   m_TagString: Untagged
@@ -330,15 +332,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c01c64f41422d54fa20119096cb84a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridXSize: 100
-  gridYSize: 100
+  gridXSize: 50
+  gridYSize: 50
   vertices: []
   perlinOffset: 0
   perlinScale: 0.025
   perlinMagnitude: 2
   useVisualisation: 1
   visCounter: 0
-  visCounterTarget: 25
+  visCounterTarget: 50
+  nodePrefab: {fileID: 1817082698629810, guid: 021103b1f32307745a11d47a4911d4e8, type: 2}
+  obstructionThreshold: 60
+  obstructionPrefab: {fileID: 1486748402644476, guid: 75244f2657aae3d42a29fe4ca6e055c8,
+    type: 2}
 --- !u!4 &1707577683
 Transform:
   m_ObjectHideFlags: 0
@@ -347,8 +353,48 @@ Transform:
   m_GameObject: {fileID: 1707577679}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1707577684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1707577679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae7fbf2edb36a564d9f0b36b6f710adc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nodes: []
+  edges: []
+  edgeRange: 1.5
+  edgePrefab: {fileID: 1001575856534802, guid: a17a356b22cf9064d9c82236e46ef0b8, type: 2}
+  path: []
+  type: 1
+  useVisualisation: 1
+  visCounter: 0
+  visCounterTarget: 20
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
+  vertFeed: 1
+--- !u!114 &1707577685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1707577679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ec2185f9b94dc743b5e9a133dd73678, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerPrefab: {fileID: 1165010202646896, guid: 20e1da8fbc9b13147a210eba20a1aa81,
+    type: 2}
+  seeker: {fileID: 0}
+  target: {fileID: 0}
+  pathRenderer: {fileID: 0}
