@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -187,8 +187,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 175928550}
-  m_LocalRotation: {x: 0.18162993, y: 0.3455723, z: -0.06836506, w: 0.9181049}
-  m_LocalPosition: {x: 6.3372455, y: 4.4360695, z: 6.337242}
+  m_LocalRotation: {x: -0.00008163043, y: 0.9679627, z: -0.2510939, w: -0.0003242791}
+  m_LocalPosition: {x: 10.182059, y: 2.6700177, z: 21.957548}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -333,6 +333,12 @@ MonoBehaviour:
   gridXSize: 100
   gridYSize: 100
   vertices: []
+  perlinOffset: 0
+  perlinScale: 0.025
+  perlinMagnitude: 2
+  useVisualisation: 1
+  visCounter: 0
+  visCounterTarget: 25
 --- !u!4 &1707577683
 Transform:
   m_ObjectHideFlags: 0

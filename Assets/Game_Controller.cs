@@ -8,6 +8,10 @@ public class Game_Controller : MonoBehaviour {
 	public int gridXSize, gridYSize;
     public Vector3[] vertices;
     private Mesh mesh;
+    public float perlinOffset, perlinScale, perlinMagnitude;
+
+    public bool useVisualisation;
+    public int visCounter, visCounterTarget;
 	// Use this for initialization
 	void Start () {
 		StartCoroutine (GenerateMesh ());
@@ -35,6 +39,15 @@ public class Game_Controller : MonoBehaviour {
                 uv[i] = new Vector2((float)x / gridXSize, (float)y / gridYSize);
                 tangents[i] = tangent;
             }
+            if (useVisualisation)
+            {
+                visCounter++;
+                if (visCounter > visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
+                }
+            }
         }
 
         yield return null;
@@ -54,6 +67,15 @@ public class Game_Controller : MonoBehaviour {
                 triangles[ti + 5] = vi + gridXSize + 2;
                 mesh.triangles = triangles;
             }
+            if (useVisualisation)
+            {
+                visCounter++;
+                if (visCounter > visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
+                }
+            }
         }
         yield return null;
         mesh.RecalculateNormals();
@@ -64,19 +86,41 @@ public class Game_Controller : MonoBehaviour {
 
     IEnumerator ApplyPerlinNoise ()
     {
-        int counter = 0;
         for (int i = 0; i < vertices.Length; i++)
         {
-            float noise = (float)NoiseS3D.Noise(vertices[i].x, vertices[i].z);
+            float noise = (float)NoiseS3D.Noise((vertices[i].x + perlinOffset) * perlinScale, (vertices[i].z + perlinOffset) * perlinScale) * perlinMagnitude;
             vertices[i].y += noise;
             mesh.vertices = vertices;
 
-            counter++;
-
-            if (counter >= 20)
+            if (useVisualisation)
             {
-                counter = 0;
-                yield return null;
+                visCounter++;
+                if (visCounter > visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
+                }
+            }
+        }
+
+        StartCoroutine(GenerateNodes());
+        yield break;
+    }
+
+    IEnumerator GenerateNodes ()
+    {
+        foreach (Vector3 vert in vertices)
+        {
+            //Generate Node
+
+            if (useVisualisation)
+            {
+                visCounter++;
+                if (visCounter > visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
+                }
             }
         }
         yield break;
