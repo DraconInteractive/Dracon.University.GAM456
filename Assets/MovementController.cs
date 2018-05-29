@@ -155,7 +155,10 @@ public class MovementController : MonoBehaviour {
             pathRenderer.SetPosition(i, path[i].position + Vector3.up * 0.75f);
         }
 
-        Game_Controller.controller.StartHidePathing();
+        if (Game_Controller.controller != null)
+        {
+            Game_Controller.controller.StartHidePathing();
+        }
     }
 
 }

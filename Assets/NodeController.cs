@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//Total notes:
+//Linear node creation and edge creation is a straight forward iteration of nodes with a distance loop to check for neighbours. Store that info in an edge, delete any nodes that are obstructed. BAM. 
+//Vine node/edge creation goes from a seed outward. It has some weird behaviour right now, so working on THAT. Might make a Vine 2.0 to just start from scratch with that. 
+//Gonna do that ^. Calling it Ivy. 
 public class NodeController : MonoBehaviour {
 
     public static NodeController controller;
@@ -17,7 +21,8 @@ public class NodeController : MonoBehaviour {
     public enum GenerationType
     {
         Linear,
-        Vine
+        Vine,
+        Ivy
     };
 
     public GenerationType type;
@@ -26,7 +31,7 @@ public class NodeController : MonoBehaviour {
     public int visCounter, visCounterTarget;
 
     public LayerMask obstructionMask;
-
+    public float obstructionDetectWidth;
     public bool vertFeed;
     void Awake ()
     {
@@ -70,9 +75,14 @@ public class NodeController : MonoBehaviour {
         else if (type == GenerationType.Vine)
         {
             StartCoroutine(CreateEdgesVineLike());
+        } 
+        else if (type == GenerationType.Ivy)
+        {
+            StartCoroutine(CreateEdgesIvy());
         }
     }
     //Note, I will use yield return null for both of these as it helps me visualise it. Probs just faster to remove it, but for now im keeping :) might put in a bool toggle for it though. 
+    //Yup, put in that toggle. If i just let it go it crashes on my old laptop due to my old laptop being shit.
     IEnumerator CreateEdges ()
     {
         yield return new WaitForSeconds(0.1f);
@@ -86,15 +96,7 @@ public class NodeController : MonoBehaviour {
                     
                     Ray ray = new Ray(node.position, n.position - node.position);
                     RaycastHit hit;
-                    //if (Physics.Raycast(ray, out hit, 2))
-                    //{
-
-                    //}
-                    if (Physics.SphereCast(ray, 0.25f, out hit, 2, obstructionMask))
-                    {
-
-                    }
-                    else
+                    if (!Physics.SphereCast(ray, obstructionDetectWidth, out hit, 2, obstructionMask))
                     {
                         NodeEdge e = Instantiate(edgePrefab, (node.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
                         LineRenderer l = e.gameObject.GetComponent<LineRenderer>();
@@ -102,10 +104,10 @@ public class NodeController : MonoBehaviour {
                         l.SetPosition(0, node.transform.position);
                         l.SetPosition(1, n.transform.position);
 
+                        e.endNode = n;
                         edges.Add(e);
                         node.edges.Add(e);
-                    }
-                    
+                    }                    
                 }
             }
             if (useVisualisation)
@@ -157,28 +159,17 @@ public class NodeController : MonoBehaviour {
         {
             //print("Current nodes: " + currentNodes.Count + " Next nodes: " + nextNodes.Count + " allNodes: " + allNodes.Count);
             //Overall, iterate through all active nodes to see if they can be connected to any other nodes. This presents a simpler interface than linear, but it also has some weird discrepancies. Need to work on those. 
+            //Soooo... looks like the discrepancies are here to stay? Cant seem to shake them.
+            //In the mesh gen version, this doesnt matter so much. Player needs to go left? Do a little loop. Its almost more realistic. Its the tile version that concerns me here. 
             foreach (Node node in currentNodes)
             {
                 //Pretty sure this might not be working atm, but i need to check it when im awake. *EDIT I think Ive actually forgotton to SET the node edges... oops, didnt need them for my other algorithm till now.
+                //Node edges set for this and linear. 
                 foreach (Node n in allNodes)
-                {
-                    bool edgeExists = false;
-                    foreach (NodeEdge edge in n.edges)
-                    {
-                        foreach (NodeEdge edgey in node.edges)
-                        {
-                            if (edge.endNode == node || edgey.endNode == n)
-                            {
-                                edgeExists = true;
-                                break;
-                            }
-                        }
-                    }
+                { 
+                    //Check if new node is old node (I need to remember to implement this in linear too) //Implemented in linear. 
 
-
-                    //Check if new node is old node (I need to remember to implement this in linear too)
-
-                    if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node && !edgeExists && !currentNodes.Contains(n) && !n.edgeCalculated)
+                    if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node && !currentNodes.Contains(n) && !n.edgeCalculated)
                     {
                         NodeEdge e = Instantiate(edgePrefab, (node.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
                         e.endNode = n;
@@ -187,6 +178,7 @@ public class NodeController : MonoBehaviour {
                         l.SetPosition(0, node.transform.position);
                         l.SetPosition(1, n.transform.position);
 
+                        e.endNode = n;
                         edges.Add(e);
                         node.edges.Add(e);
 
@@ -214,6 +206,9 @@ public class NodeController : MonoBehaviour {
 
             //Remove considered nodes as it goes - makes it go faster as it progresses, good for big maps. 
             //Set already registered nodes to calculated. 
+            //I think this is what is causing my irregularity in edge assignation. Gonna do some tests. 
+            //Well i was right about it speeding things up. Just almost crashed Unity. Good thing I had Vis enabled. 
+            //Righto, will check some other things and come back to this then. 
             foreach (Node cleared in currentNodes)
             {
                 allNodes.Remove(cleared);
@@ -221,6 +216,8 @@ public class NodeController : MonoBehaviour {
             }
             
             //Find any shared nodes and remove. I double up on this calculation a bit here and there, i need to sort that out. 
+            //Yehhh so disabling this made things go about 10% faster, so ima keep it gone. 
+            /*
             List<Node> sameNodes = new List<Node>();
             foreach (Node n in nextNodes)
             {
@@ -233,6 +230,7 @@ public class NodeController : MonoBehaviour {
             {
                 nextNodes.Remove(n);
             }
+            */
             //Clear the current nodes to prepare for next iteration. 
             currentNodes.Clear();
             //Transfer queued nodes to active list
@@ -256,34 +254,102 @@ public class NodeController : MonoBehaviour {
         yield break;
     }
 
-    public List<Node> GetNeighbours (Node node)
+    //Modelling this off the A* pseudocode I was studying for the pathfinding. It SHOULD work. It probably wont, but it should...
+    IEnumerator CreateEdgesIvy ()
     {
-        
-        List<Node> neighbours = new List<Node>();
-        
-        foreach (Node n in nodes)
-        {
-            if (Vector3.Distance(n.position, node.position) < edgeRange)
-            {
-                RaycastHit hit;
-                if (Physics.SphereCast(new Ray(node.position, n.position - node.position), 0.25f, out hit, 1, obstructionMask))
-                {
+        //In case you're wondering why this is here, its so if things go wrong in the processing queue, theres a buffer of a few frames for things to sort themselves out. Technically redundant, but its my airbag. 
+        yield return new WaitForSeconds(0.1f);
 
+        List<Node> activeNodes = new List<Node>();
+        List<Node> finishedNodes = new List<Node>();
+
+        activeNodes.Add(nodes[0]);
+        while (activeNodes.Count > 0)
+        {
+            Node current = activeNodes[0];
+
+            foreach (Node n in nodes)
+            {
+                float dist = Vector3.Distance(current.position, n.position);
+
+                if (dist < edgeRange && current != n)
+                {
+                    Ray ray = new Ray(current.position, n.position - current.position);
+                    RaycastHit hit;
+                    if (!Physics.SphereCast(ray, obstructionDetectWidth, out hit, 2, obstructionMask))
+                    {
+                        NodeEdge e = Instantiate(edgePrefab, (current.transform.position + n.transform.position) / 2, Quaternion.identity, this.transform).GetComponent<NodeEdge>();
+                        LineRenderer l = e.gameObject.GetComponent<LineRenderer>();
+                        l.positionCount = 2;
+                        l.SetPosition(0, current.transform.position);
+                        l.SetPosition(1, n.transform.position);
+
+                        e.endNode = n;
+                        edges.Add(e);
+                        current.edges.Add(e);
+
+                        activeNodes.Add(n);
+                    }
+                }
+            }
+
+
+            activeNodes.Remove(current);
+            finishedNodes.Add(current);
+
+            if (useVisualisation)
+            {
+                if (visCounter >= visCounterTarget)
+                {
+                    visCounter = 0;
+                    yield return null;
                 }
                 else
                 {
-                    neighbours.Add(n);
+                    visCounter++;
                 }
-                
             }
         }
-        //Ill get this working later i think...
-        /*
+
+        if (MovementController.controller != null)
+        {
+            StartCoroutine(MovementController.controller.DoTheThing());
+        }
+
+        print("Finished ivy generation");
+        yield break;
+    }
+    public List<Node> GetNeighbours (Node node)
+    {
+        List<Node> neighbours = new List<Node>();
+
         foreach (NodeEdge edge in node.edges)
         {
-            if (edge.endNode != node)
+            neighbours.Add(edge.endNode);
+        }
+
+        //FEAR THE DEPRECATION. LOVE THE DEPRECATION. BE THE DEPRECATION
+        /*
+        if (controller.type == GenerationType.Linear)
+        {
+            foreach (NodeEdge edge in node.edges)
             {
                 neighbours.Add(edge.endNode);
+            }
+        }
+        else
+        {
+            //Making vine use distance check as it still doesnt have good edge making in yet. Once i can get it reliably tagging all nearby nodes I will just deprecate this if. 
+            foreach (Node n in nodes)
+            {
+                if (Vector3.Distance(n.position, node.position) < edgeRange)
+                {
+                    RaycastHit hit;
+                    if (!Physics.SphereCast(new Ray(node.position, n.position - node.position), obstructionDetectWidth, out hit, 1, obstructionMask))
+                    {
+                        neighbours.Add(n);
+                    }
+                }
             }
         }
         */

@@ -213,8 +213,8 @@ MonoBehaviour:
     Frequency: 20
   - Prefab: {fileID: 1904752828237086, guid: 902788dea7766489e8284b5f894d79f5, type: 2}
     Frequency: 5
-  Length: 40
-  Width: 20
+  Length: 60
+  Width: 40
 --- !u!4 &747488158
 Transform:
   m_ObjectHideFlags: 0
@@ -247,10 +247,12 @@ MonoBehaviour:
   type: 0
   useVisualisation: 1
   visCounter: 0
-  visCounterTarget: 50
+  visCounterTarget: 10
   obstructionMask:
     serializedVersion: 2
     m_Bits: 256
+  obstructionDetectWidth: 0.25
+  vertFeed: 0
 --- !u!114 &747488160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -441,8 +443,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1045548244}
-  m_LocalRotation: {x: -0.29003957, y: 0.64563906, z: -0.29089645, w: -0.6437441}
-  m_LocalPosition: {x: 55.09062, y: 29.401806, z: 23.717669}
+  m_LocalRotation: {x: -0.27155504, y: -0.6517793, z: 0.27044377, w: -0.65444773}
+  m_LocalPosition: {x: -9.294708, y: 24.152504, z: 26.244669}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

@@ -21,6 +21,7 @@ public class Game_Controller : MonoBehaviour {
 
     public GameObject obstructionPrefab;
 
+    public bool hidePathingOnFinish;
     private void Awake()
     {
         controller = this;
@@ -157,8 +158,12 @@ public class Game_Controller : MonoBehaviour {
 
     public void StartHidePathing ()
     {
-        StartCoroutine(HidePathing());
+        if (hidePathingOnFinish)
+        {
+            StartCoroutine(HidePathing());
+        }
     }
+
    IEnumerator HidePathing ()
    {
         NodeController nController = NodeController.controller;
