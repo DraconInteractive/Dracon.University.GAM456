@@ -23,10 +23,13 @@ public class Game_Controller : MonoBehaviour {
 
     [Header("Hex Grid Options")]
     public GameObject[] hexGrid;
+    public List<GameObject> landHexes = new List<GameObject>();
     public GameObject hexTilePrefab;
     public Vector3 tileOffset;
     public float hexAdjust;
-    public Color bottomColor, topColor;
+    public Color bottomColor, topColor, waterColor;
+    public float waterThreshold;
+    public float colorMod;
 
     [Header("Misc Options")]
     public GameObject nodePrefab;
@@ -224,18 +227,42 @@ public class Game_Controller : MonoBehaviour {
     IEnumerator ColorMeHexes ()
     {
         List<Renderer> rr = new List<Renderer>();
-        //float avY = 0;
+        float avY = 0;
+        float min = Mathf.Infinity;
+        float max = -Mathf.Infinity;
         foreach (GameObject go in hexGrid)
         {
             rr.Add(go.GetComponentInChildren<Renderer>());
-            //avY += go.transform.position.y;
+            avY += go.transform.position.y;
+            float height = go.transform.position.y;
+            if (height < min)
+            {
+                min = height;
+            }
+            if (height > max)
+            {
+                max = height;
+            }
         }
-        //avY /= hexGrid.Length;
+        avY /= hexGrid.Length;
 
         for (int i = 0; i < rr.Count; i++)
         {
-            float normalised = (hexGrid[i].transform.position.y / 1) / (-1 / 1);
-            rr[i].material.color = Color.Lerp(bottomColor, topColor, normalised);
+            float height = hexGrid[i].transform.position.y;
+            if (height < waterThreshold)
+            {
+                
+                rr[i].material.color = waterColor;
+            }
+            else
+            {
+                float normalised = (height / 2) / (waterThreshold / 2);
+                rr[i].material.color = Color.Lerp(bottomColor, topColor,Mathf.Pow(normalised, colorMod));
+
+                landHexes.Add(hexGrid[i]);
+            }
+            
+            
             if (useVisualisation)
             {
                 visCounter++;
@@ -246,6 +273,9 @@ public class Game_Controller : MonoBehaviour {
                 }
             }
         }
+        print("min: " + min + " max: " + max + " avg: " + avY);
+
+        StartCoroutine(GenerateNodes());
         yield break;
     }
     
@@ -277,6 +307,25 @@ public class Game_Controller : MonoBehaviour {
                         visCounter = 0;
                         yield return null;
                     }
+                }
+            }
+        }
+        else if (genType == GenerationType.HexTile)
+        {
+            foreach (GameObject go in landHexes)
+            {
+                float f = Random.Range(0, 100);
+                if (f > obstructionThreshold)
+                {
+                    Instantiate(obstructionPrefab, go.transform.position, Quaternion.identity, this.transform);
+                }
+                else
+                {
+                    Node node = Instantiate(nodePrefab, go.transform.position + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                    NodeController.controller.nodes.Add(node);
+
+                    node.position = go.transform.position;
+                    node.tile = null;
                 }
             }
         }
