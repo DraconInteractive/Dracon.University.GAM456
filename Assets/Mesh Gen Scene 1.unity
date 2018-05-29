@@ -338,7 +338,10 @@ MonoBehaviour:
   vertices: []
   hexGrid: []
   hexTilePrefab: {fileID: 100002, guid: 228622a10b4f4b249be7284a3a31a713, type: 3}
-  tileOffset: {x: 1.7, y: 0, z: 1.7}
+  tileOffset: {x: 1.6, y: 0, z: 1.9}
+  hexAdjust: 1
+  bottomColor: {r: 0, g: 0.3584906, b: 0.027488867, a: 0}
+  topColor: {r: 0.57815886, g: 1, b: 0, a: 0}
   nodePrefab: {fileID: 1817082698629810, guid: 021103b1f32307745a11d47a4911d4e8, type: 2}
   perlinOffset: 0
   perlinScale: 0.025
