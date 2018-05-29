@@ -93,7 +93,6 @@ public class NodeController : MonoBehaviour {
             {
                 if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node)
                 {
-                    
                     Ray ray = new Ray(node.position, n.position - node.position);
                     RaycastHit hit;
                     if (!Physics.SphereCast(ray, obstructionDetectWidth, out hit, 2, obstructionMask))

@@ -6,15 +6,37 @@ using UnityEngine;
 public class Game_Controller : MonoBehaviour {
 
     public static Game_Controller controller;
-	public int gridXSize, gridYSize;
+
+    public enum GenerationType
+    {
+        Mesh,
+        HexTile
+    };
+
+    public GenerationType genType;
+
+    public int gridXSize, gridYSize;
+
+    [Header("Mesh Gen Options")]
     public Vector3[] vertices;
     private Mesh mesh;
+
+    [Header("Hex Grid Options")]
+    public GameObject[] hexGrid;
+    public GameObject hexTilePrefab;
+    public Vector3 tileOffset;
+    public float hexAdjust;
+    public Color bottomColor, topColor;
+
+    [Header("Misc Options")]
+    public GameObject nodePrefab;
+
     public float perlinOffset, perlinScale, perlinMagnitude;
 
     public bool useVisualisation;
     public int visCounter, visCounterTarget;
 
-    public GameObject nodePrefab;
+    
 
     [Range(0,100)]
     public float obstructionThreshold;
@@ -28,7 +50,15 @@ public class Game_Controller : MonoBehaviour {
     }
     // Use this for initialization
     void Start () {
-		StartCoroutine (GenerateMesh ());
+        if (genType == GenerationType.Mesh)
+        {
+            StartCoroutine(GenerateMesh());
+        } 
+        else if (genType == GenerationType.HexTile)
+        {
+            StartCoroutine(GenerateHexGrid());
+        }
+		
 	}
 	
 	// Update is called once per frame
@@ -100,47 +130,112 @@ public class Game_Controller : MonoBehaviour {
         yield break;
 	}
 
-    IEnumerator ApplyPerlinNoise ()
+    IEnumerator GenerateHexGrid()
     {
-        for (int i = 0; i < vertices.Length; i++)
+        if (gridXSize % 2 == 0)
         {
-            float noise = (float)NoiseS3D.Noise((vertices[i].x + perlinOffset) * perlinScale, (vertices[i].z + perlinOffset) * perlinScale) * perlinMagnitude;
-            vertices[i].y += noise;
-            mesh.vertices = vertices;
-
-            if (useVisualisation)
+            gridXSize--;
+        }
+        else
+        {
+            print("GXS: " + gridXSize + "% 2 == " + gridXSize % 2);
+        }
+        hexGrid = new GameObject[(gridXSize + 1) * (gridYSize + 1)];
+        int offsetCounter = 0;
+        float hexOffset = 0;
+        for (int i = 0, y = 0; y <= gridYSize; y++)
+        {
+            
+            for (int x = 0; x <= gridXSize; x++, i++)
             {
-                visCounter++;
-                if (visCounter > visCounterTarget)
+                
+                offsetCounter++;
+                if (offsetCounter % 2 == 0)
                 {
-                    visCounter = 0;
-                    yield return null;
+                    hexOffset = hexAdjust;
+                } 
+                else
+                {
+                    hexOffset = 0;
+                }
+
+                hexGrid[i] = Instantiate(hexTilePrefab, new Vector3((x * tileOffset.x), 0, (y * tileOffset.z) + hexOffset), Quaternion.identity, this.transform);
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
                 }
             }
         }
-
-        StartCoroutine(GenerateNodes());
+        StartCoroutine(ApplyPerlinNoise());
+        print("hex grid done");
         yield break;
     }
 
-    IEnumerator GenerateNodes ()
+    IEnumerator ApplyPerlinNoise ()
     {
-        foreach (Vector3 vert in vertices)
+        if (genType == GenerationType.Mesh)
         {
-            float f = Random.Range(0, 100);
-            if (f > obstructionThreshold)
+            for (int i = 0; i < vertices.Length; i++)
             {
-                Instantiate(obstructionPrefab, vert, Quaternion.identity, this.transform);
-            }
-            else
-            {
-                Node node = Instantiate(nodePrefab, vert + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
-                NodeController.controller.nodes.Add(node);
+                float noise = (float)NoiseS3D.Noise((vertices[i].x + perlinOffset) * perlinScale, (vertices[i].z + perlinOffset) * perlinScale) * perlinMagnitude;
+                vertices[i].y += noise;
+                mesh.vertices = vertices;
 
-                node.position = vert;
-                node.tile = null;
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
+                }
             }
-           
+
+            StartCoroutine(GenerateNodes());
+        }
+        else if (genType == GenerationType.HexTile)
+        {
+            for (int i = 0; i < hexGrid.Length; i++)
+            {
+                float noise = (float)NoiseS3D.Noise((hexGrid[i].transform.position.x + perlinOffset) * perlinScale, (hexGrid[i].transform.position.z + perlinOffset) * perlinScale) * perlinMagnitude;
+                hexGrid[i].transform.Translate(Vector3.up * noise);
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
+                }
+            }
+            StartCoroutine(ColorMeHexes());
+        }
+        yield break;
+    }
+
+    IEnumerator ColorMeHexes ()
+    {
+        List<Renderer> rr = new List<Renderer>();
+        //float avY = 0;
+        foreach (GameObject go in hexGrid)
+        {
+            rr.Add(go.GetComponentInChildren<Renderer>());
+            //avY += go.transform.position.y;
+        }
+        //avY /= hexGrid.Length;
+
+        for (int i = 0; i < rr.Count; i++)
+        {
+            float normalised = (hexGrid[i].transform.position.y / 1) / (-1 / 1);
+            rr[i].material.color = Color.Lerp(bottomColor, topColor, normalised);
             if (useVisualisation)
             {
                 visCounter++;
@@ -151,6 +246,41 @@ public class Game_Controller : MonoBehaviour {
                 }
             }
         }
+        yield break;
+    }
+    
+    IEnumerator GenerateNodes ()
+    {
+        if (genType == GenerationType.Mesh)
+        {
+            foreach (Vector3 vert in vertices)
+            {
+                float f = Random.Range(0, 100);
+                if (f > obstructionThreshold)
+                {
+                    Instantiate(obstructionPrefab, vert, Quaternion.identity, this.transform);
+                }
+                else
+                {
+                    Node node = Instantiate(nodePrefab, vert + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                    NodeController.controller.nodes.Add(node);
+
+                    node.position = vert;
+                    node.tile = null;
+                }
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
+                }
+            }
+        }
+        
 
         NodeController.controller.DoEdges();
         yield break;

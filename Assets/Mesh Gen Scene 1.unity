@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481694, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -332,20 +332,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c01c64f41422d54fa20119096cb84a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridXSize: 50
-  gridYSize: 50
+  genType: 1
+  gridXSize: 100
+  gridYSize: 100
   vertices: []
+  hexGrid: []
+  hexTilePrefab: {fileID: 100002, guid: 228622a10b4f4b249be7284a3a31a713, type: 3}
+  tileOffset: {x: 1.7, y: 0, z: 1.7}
+  nodePrefab: {fileID: 1817082698629810, guid: 021103b1f32307745a11d47a4911d4e8, type: 2}
   perlinOffset: 0
   perlinScale: 0.025
   perlinMagnitude: 2
   useVisualisation: 1
   visCounter: 0
   visCounterTarget: 50
-  nodePrefab: {fileID: 1817082698629810, guid: 021103b1f32307745a11d47a4911d4e8, type: 2}
-  obstructionThreshold: 75
+  obstructionThreshold: 98
   obstructionPrefab: {fileID: 1486748402644476, guid: 75244f2657aae3d42a29fe4ca6e055c8,
     type: 2}
-  hidePathingOnFinish: 0
+  hidePathingOnFinish: 1
 --- !u!4 &1707577683
 Transform:
   m_ObjectHideFlags: 0
@@ -375,7 +379,7 @@ MonoBehaviour:
   edgeRange: 1.5
   edgePrefab: {fileID: 1001575856534802, guid: a17a356b22cf9064d9c82236e46ef0b8, type: 2}
   path: []
-  type: 1
+  type: 0
   useVisualisation: 1
   visCounter: 0
   visCounterTarget: 20
