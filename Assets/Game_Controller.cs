@@ -31,6 +31,13 @@ public class Game_Controller : MonoBehaviour {
     public float waterThreshold;
     public float colorMod;
 
+    [Header("World Options")]
+    List<GameObject> cities = new List<GameObject>();
+    List<GameObject> forests = new List<GameObject>();
+    public GameObject cityPiecePrefab;
+    public GameObject forestPiecePrefab;
+    public float cityThreshold;
+
     [Header("Misc Options")]
     public GameObject nodePrefab;
 
@@ -317,7 +324,14 @@ public class Game_Controller : MonoBehaviour {
                 float f = Random.Range(0, 100);
                 if (f > obstructionThreshold)
                 {
-                    Instantiate(obstructionPrefab, go.transform.position, Quaternion.identity, this.transform);
+                    if (cities.Count > (forests.Count / cityThreshold))
+                    {
+                        forests.Add(Instantiate(forestPiecePrefab, go.transform.position, Quaternion.identity, this.transform));
+                    }
+                    else
+                    {
+                        cities.Add(Instantiate(cityPiecePrefab, go.transform.position, Quaternion.identity, this.transform));
+                    }
                 }
                 else
                 {

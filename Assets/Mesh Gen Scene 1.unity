@@ -333,8 +333,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   genType: 1
-  gridXSize: 100
-  gridYSize: 100
+  gridXSize: 50
+  gridYSize: 50
   vertices: []
   hexGrid: []
   landHexes: []
