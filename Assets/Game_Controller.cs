@@ -36,7 +36,9 @@ public class Game_Controller : MonoBehaviour {
     List<GameObject> forests = new List<GameObject>();
     public GameObject cityPiecePrefab;
     public GameObject forestPiecePrefab;
-    public float cityThreshold;
+    public float cityDistance;
+    public int treeCounter;
+    public LayerMask obstructionMask;
 
     [Header("Misc Options")]
     public GameObject nodePrefab;
@@ -233,6 +235,7 @@ public class Game_Controller : MonoBehaviour {
 
     IEnumerator ColorMeHexes ()
     {
+        //Until I make a shader for this, its a bit much. Setting back for now, gonna disable land and keep water change. Will still impact performance, but less, especially with GPU batching on. 
         List<Renderer> rr = new List<Renderer>();
         float avY = 0;
         float min = Mathf.Infinity;
@@ -263,10 +266,13 @@ public class Game_Controller : MonoBehaviour {
             }
             else
             {
+                /*
                 float normalised = (height / 2) / (waterThreshold / 2);
                 rr[i].material.color = Color.Lerp(bottomColor, topColor,Mathf.Pow(normalised, colorMod));
-
+                */
                 landHexes.Add(hexGrid[i]);
+                
+                //TODO ^ that
             }
             
             
@@ -319,29 +325,114 @@ public class Game_Controller : MonoBehaviour {
         }
         else if (genType == GenerationType.HexTile)
         {
+            //Generate nodes
             foreach (GameObject go in landHexes)
             {
-                float f = Random.Range(0, 100);
-                if (f > obstructionThreshold)
+                Node node = Instantiate(nodePrefab, go.transform.position + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                NodeController.controller.nodes.Add(node);
+
+                node.position = go.transform.position;
+                node.tile = null;
+
+                if (useVisualisation)
                 {
-                    if (cities.Count > (forests.Count / cityThreshold))
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
                     {
-                        forests.Add(Instantiate(forestPiecePrefab, go.transform.position, Quaternion.identity, this.transform));
+                        visCounter = 0;
+                        yield return null;
                     }
-                    else
-                    {
-                        cities.Add(Instantiate(cityPiecePrefab, go.transform.position, Quaternion.identity, this.transform));
-                    }
+                }
+            }
+
+            List<Node> nodesToRemove = new List<Node>();
+            //Generate cities
+            foreach (Node node in NodeController.controller.nodes)
+            {
+                Collider[] hits = Physics.OverlapSphere(node.position, cityDistance, obstructionMask);
+                if (hits.Length > 0)
+                {
+                    //continue;
                 }
                 else
                 {
-                    Node node = Instantiate(nodePrefab, go.transform.position + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
-                    NodeController.controller.nodes.Add(node);
+                    nodesToRemove.Add(node);
+                    List<Node> neighbours = new List<Node>();
+                    foreach (Node n in NodeController.controller.nodes)
+                    {
+                        if (Vector3.Distance(node.position, n.position) < NodeController.controller.edgeRange)
+                        {
+                            neighbours.Add(n);
+                        }
+                    }
 
-                    node.position = go.transform.position;
-                    node.tile = null;
+                    foreach (Node n in neighbours)
+                    {
+                        cities.Add(Instantiate(cityPiecePrefab, n.position, Quaternion.identity, this.transform));
+                        nodesToRemove.Add(n);
+                    }
+                }
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
                 }
             }
+            //Clear city nodes
+            foreach (Node n in nodesToRemove)
+            {
+                NodeController.controller.nodes.Remove(n);
+                Destroy(n.gameObject);
+            }
+            nodesToRemove.Clear();
+
+            yield return null;
+
+            int counter = 0;
+            //Get tree seeds
+            List<Node> treeNodes = new List<Node>();
+            foreach (Node node in NodeController.controller.nodes)
+            {
+                counter++;
+                if (counter % treeCounter == 0)
+                {
+                    treeNodes.Add(node);
+                }
+            }
+            //Expand on seeds
+            foreach (Node node in treeNodes)
+            {
+                forests.Add(Instantiate(forestPiecePrefab, node.position, Quaternion.identity, this.transform));
+                nodesToRemove.Add(node);
+                List<Node> neighbours = new List<Node>();
+                foreach (Node n in NodeController.controller.nodes)
+                {
+                    if (Vector3.Distance(node.position, n.position) < NodeController.controller.edgeRange)
+                    {
+                        neighbours.Add(n);
+                    }
+                }
+
+                foreach (Node n in neighbours)
+                {
+                    forests.Add(Instantiate(forestPiecePrefab, n.position, Quaternion.identity, this.transform));
+                    nodesToRemove.Add(n);
+                }
+            }
+
+            //Clear forest nodes
+            foreach (Node n in nodesToRemove)
+            {
+                NodeController.controller.nodes.Remove(n);
+                Destroy(n.gameObject);
+            }
+            nodesToRemove.Clear();
+
         }
         
 

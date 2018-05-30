@@ -19,7 +19,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4588761606183092}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Tree
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33084907084481314}
   - component: {fileID: 23053699171959506}
   - component: {fileID: 65608349261879790}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TreeStump
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -55,7 +55,7 @@ GameObject:
   - component: {fileID: 33495184982450064}
   - component: {fileID: 23806434861412994}
   - component: {fileID: 65633420455645972}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TreeLeaves
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -333,12 +333,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   genType: 1
-  gridXSize: 50
-  gridYSize: 50
+  gridXSize: 100
+  gridYSize: 100
   vertices: []
   hexGrid: []
   landHexes: []
-  hexTilePrefab: {fileID: 100002, guid: 228622a10b4f4b249be7284a3a31a713, type: 3}
+  hexTilePrefab: {fileID: 1076981935584700, guid: 30dcaf395a07a144984799a4af553dab,
+    type: 2}
   tileOffset: {x: 1.6, y: 0, z: 1.9}
   hexAdjust: 1
   bottomColor: {r: 0.48026565, g: 0.8018868, b: 0, a: 0}
@@ -350,15 +351,19 @@ MonoBehaviour:
     type: 2}
   forestPiecePrefab: {fileID: 1100917528580352, guid: 976114115ccfacb4db8cb976f17c04c6,
     type: 2}
-  cityThreshold: 20
+  cityDistance: 35
+  treeCounter: 10
+  obstructionMask:
+    serializedVersion: 2
+    m_Bits: 256
   nodePrefab: {fileID: 1817082698629810, guid: 021103b1f32307745a11d47a4911d4e8, type: 2}
   perlinOffset: 0
   perlinScale: 0.025
   perlinMagnitude: 2
-  useVisualisation: 1
+  useVisualisation: 0
   visCounter: 0
-  visCounterTarget: 60
-  obstructionThreshold: 98
+  visCounterTarget: 100
+  obstructionThreshold: 50
   obstructionPrefab: {fileID: 1486748402644476, guid: 75244f2657aae3d42a29fe4ca6e055c8,
     type: 2}
   hidePathingOnFinish: 1
@@ -394,7 +399,7 @@ MonoBehaviour:
   type: 0
   useVisualisation: 1
   visCounter: 0
-  visCounterTarget: 20
+  visCounterTarget: 50
   obstructionMask:
     serializedVersion: 2
     m_Bits: 256
