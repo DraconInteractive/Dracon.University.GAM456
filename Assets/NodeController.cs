@@ -89,10 +89,18 @@ public class NodeController : MonoBehaviour {
 
         foreach (Node node in nodes)
         {
+            if (node.tile.Type == Tile.TileType.Obstructed)
+            {
+                continue;
+            }
             foreach (Node n in nodes)
             {
                 if (Vector3.Distance(node.transform.position, n.transform.position) < edgeRange && n != node)
                 {
+                    if (node.tile.Type == Tile.TileType.Obstructed)
+                    {
+                        continue;
+                    }
                     Ray ray = new Ray(node.position, n.position - node.position);
                     RaycastHit hit;
                     if (!Physics.SphereCast(ray, obstructionDetectWidth, out hit, 2, obstructionMask))
@@ -318,6 +326,7 @@ public class NodeController : MonoBehaviour {
         print("Finished ivy generation");
         yield break;
     }
+
     public List<Node> GetNeighbours (Node node)
     {
         List<Node> neighbours = new List<Node>();

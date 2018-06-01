@@ -347,6 +347,7 @@ MonoBehaviour:
   waterColor: {r: 0, g: 0.108250156, b: 0.3584906, a: 0}
   waterThreshold: -0.5
   colorMod: 2
+  groundMat: {fileID: 2100000, guid: 8bff941f6b47da94788a4fb6fcf87d5f, type: 2}
   cityPiecePrefab: {fileID: 1725007617008484, guid: 9eb3b306ca73ab34cb9f79358e8060a7,
     type: 2}
   forestPiecePrefab: {fileID: 1100917528580352, guid: 976114115ccfacb4db8cb976f17c04c6,
@@ -360,7 +361,7 @@ MonoBehaviour:
   perlinOffset: 0
   perlinScale: 0.025
   perlinMagnitude: 2
-  useVisualisation: 0
+  useVisualisation: 1
   visCounter: 0
   visCounterTarget: 100
   obstructionThreshold: 50

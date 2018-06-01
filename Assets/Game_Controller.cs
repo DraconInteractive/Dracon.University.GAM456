@@ -30,6 +30,7 @@ public class Game_Controller : MonoBehaviour {
     public Color bottomColor, topColor, waterColor;
     public float waterThreshold;
     public float colorMod;
+    public Material groundMat;
 
     [Header("World Options")]
     List<GameObject> cities = new List<GameObject>();
@@ -254,6 +255,10 @@ public class Game_Controller : MonoBehaviour {
                 max = height;
             }
         }
+        //Shader.SetGlobalFloat("_MinHeight", min);
+        //Shader.SetGlobalFloat("_MaxHeight", max);
+        groundMat.SetFloat("_MinHeight", min);
+        groundMat.SetFloat("_MaxHeight", max);
         avY /= hexGrid.Length;
 
         for (int i = 0; i < rr.Count; i++)
@@ -262,7 +267,9 @@ public class Game_Controller : MonoBehaviour {
             if (height < waterThreshold)
             {
                 
+                /*
                 rr[i].material.color = waterColor;
+                */
             }
             else
             {
@@ -332,7 +339,7 @@ public class Game_Controller : MonoBehaviour {
                 NodeController.controller.nodes.Add(node);
 
                 node.position = go.transform.position;
-                node.tile = null;
+                node.tile = go.GetComponent<Tile>();
 
                 if (useVisualisation)
                 {
@@ -383,11 +390,13 @@ public class Game_Controller : MonoBehaviour {
                     }
                 }
             }
-            //Clear city nodes
+            //Set to obstructed and add city details
             foreach (Node n in nodesToRemove)
             {
-                NodeController.controller.nodes.Remove(n);
-                Destroy(n.gameObject);
+                //NodeController.controller.nodes.Remove(n);
+                //Destroy(n.gameObject);
+                n.tile.Type = Tile.TileType.Obstructed;
+                n.tile.details.Add(Tile.Aspect.City);
             }
             nodesToRemove.Clear();
 
@@ -402,6 +411,16 @@ public class Game_Controller : MonoBehaviour {
                 if (counter % treeCounter == 0)
                 {
                     treeNodes.Add(node);
+                }
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
                 }
             }
             //Expand on seeds
@@ -423,13 +442,25 @@ public class Game_Controller : MonoBehaviour {
                     forests.Add(Instantiate(forestPiecePrefab, n.position, Quaternion.identity, this.transform));
                     nodesToRemove.Add(n);
                 }
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
+                }
             }
 
-            //Clear forest nodes
+            //Set obstructed and add forest details
             foreach (Node n in nodesToRemove)
             {
-                NodeController.controller.nodes.Remove(n);
-                Destroy(n.gameObject);
+                //NodeController.controller.nodes.Remove(n);
+                //Destroy(n.gameObject);
+                n.tile.Type = Tile.TileType.Obstructed;
+                n.tile.details.Add(Tile.Aspect.Tree);
             }
             nodesToRemove.Clear();
 
