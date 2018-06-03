@@ -2,367 +2,466 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-public class Game_Controller : MonoBehaviour {
-
-    public static Game_Controller controller;
-
-    public enum GenerationType
+namespace TryOne
+{
+    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+    public class Game_Controller : MonoBehaviour
     {
-        Mesh,
-        HexTile
-    };
 
-    public GenerationType genType;
+        public static Game_Controller controller;
 
-    public int gridXSize, gridYSize;
-
-    [Header("Mesh Gen Options")]
-    public Vector3[] vertices;
-    private Mesh mesh;
-
-    [Header("Hex Grid Options")]
-    public GameObject[] hexGrid;
-    public List<GameObject> landHexes = new List<GameObject>();
-    public GameObject hexTilePrefab;
-    public Vector3 tileOffset;
-    public float hexAdjust;
-    public Color bottomColor, topColor, waterColor;
-    public float waterThreshold;
-    public float colorMod;
-    public Material groundMat;
-
-    [Header("World Options")]
-    List<GameObject> cities = new List<GameObject>();
-    List<GameObject> forests = new List<GameObject>();
-    public GameObject cityPiecePrefab;
-    public GameObject forestPiecePrefab;
-    public float cityDistance;
-    public int treeCounter;
-    public LayerMask obstructionMask;
-
-    [Header("Misc Options")]
-    public GameObject nodePrefab;
-
-    public float perlinOffset, perlinScale, perlinMagnitude;
-
-    public bool useVisualisation;
-    public int visCounter, visCounterTarget;
-
-    
-
-    [Range(0,100)]
-    public float obstructionThreshold;
-
-    public GameObject obstructionPrefab;
-
-    public bool hidePathingOnFinish;
-    private void Awake()
-    {
-        controller = this;
-    }
-    // Use this for initialization
-    void Start () {
-        if (genType == GenerationType.Mesh)
+        Coroutine spawnRoutine;
+        public enum GenerationType
         {
-            StartCoroutine(GenerateMesh());
-        } 
-        else if (genType == GenerationType.HexTile)
+            Mesh,
+            HexTile
+        };
+
+        public GenerationType genType;
+
+        public int gridXSize, gridYSize;
+
+        [Header("Mesh Gen Options")]
+        public Vector3[] vertices;
+        private Mesh mesh;
+
+        [Header("Hex Grid Options")]
+        public GameObject[] hexGrid;
+        public List<GameObject> landHexes = new List<GameObject>();
+        public GameObject hexTilePrefab;
+        public Vector3 tileOffset;
+        public float hexAdjust;
+        public Color bottomColor, topColor, waterColor;
+        public float waterThreshold;
+        public float colorMod;
+        public Material groundMat;
+
+        [Header("World Options")]
+        List<GameObject> cities = new List<GameObject>();
+        List<GameObject> forests = new List<GameObject>();
+        public GameObject cityPiecePrefab;
+        public GameObject forestPiecePrefab;
+        public float cityDistance;
+        public int treeCounter;
+        public LayerMask obstructionMask;
+
+        [Header("Misc Options")]
+        public GameObject nodePrefab;
+
+        public float perlinOffset, perlinScale, perlinMagnitude;
+
+        public bool useVisualisation;
+        public int visCounter, visCounterTarget;
+
+
+
+        [Range(0, 100)]
+        public float obstructionThreshold;
+
+        public GameObject obstructionPrefab;
+
+        public bool hidePathingOnFinish;
+        private void Awake()
         {
-            StartCoroutine(GenerateHexGrid());
+            controller = this;
         }
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
-
-	IEnumerator GenerateMesh () {
-        GetComponent<MeshFilter>().mesh = mesh = new Mesh();
-        mesh.name = "Procedural Grid";
-
-        vertices = new Vector3[(gridXSize + 1) * (gridYSize + 1)];
-        Vector2[] uv = new Vector2[vertices.Length];
-        Vector4[] tangents = new Vector4[vertices.Length];
-        Vector4 tangent = new Vector4(1f, 0f, 0f, -1f);
-
-        for (int i = 0, y = 0; y <= gridYSize; y++)
+        // Use this for initialization
+        void Start()
         {
-            for (int x = 0; x <= gridXSize; x++, i++)
-            {
-                vertices[i] = new Vector3(x, 0, y);
-                uv[i] = new Vector2((float)x / gridXSize, (float)y / gridYSize);
-                tangents[i] = tangent;
 
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
-                    {
-                        visCounter = 0;
-                        yield return null;
-                    }
-                }
+            SpawnGrid();
+        }
+
+        // Update is called once per frame
+        void Update()
+        {
+
+        }
+
+        [ContextMenu("Spawn Grid")]
+        public void SpawnGrid()
+        {
+            if (genType == GenerationType.Mesh)
+            {
+                spawnRoutine = StartCoroutine(GenerateMesh());
+            }
+            else if (genType == GenerationType.HexTile)
+            {
+                spawnRoutine = StartCoroutine(GenerateHexGrid());
             }
         }
 
-        yield return null;
-
-        mesh.vertices = vertices;
-        mesh.uv = uv;
-        mesh.tangents = tangents;
-
-        int[] triangles = new int[gridXSize * gridYSize *6];
-        for (int ti = 0, vi = 0, y = 0; y < gridYSize; y++, vi++)
+        [ContextMenu("Stop Spawn")]
+        public void StopSpawn()
         {
-            for (int x = 0; x < gridXSize; x++, ti += 6, vi++)
-            {
-                triangles[ti] = vi;
-                triangles[ti + 3] = triangles[ti + 2] = vi + 1;
-                triangles[ti + 4] = triangles[ti + 1] = vi + gridXSize + 1;
-                triangles[ti + 5] = vi + gridXSize + 2;
-                mesh.triangles = triangles;
+            StopCoroutine(spawnRoutine);
+        }
 
-                if (useVisualisation)
+        [ContextMenu("Delete Grid")]
+        public void DeleteGrid()
+        {
+            while (transform.childCount > 0)
+            {
+                foreach (Transform child in transform)
                 {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
-                    {
-                        visCounter = 0;
-                        yield return null;
-                    }
+                    DestroyImmediate(child.gameObject);
                 }
+
             }
-        }
-        yield return null;
-        mesh.RecalculateNormals();
 
-        StartCoroutine(ApplyPerlinNoise());
-        yield break;
-	}
+            landHexes.Clear();
+            cities.Clear();
+            forests.Clear();
+        }
+        IEnumerator GenerateMesh()
+        {
+            GetComponent<MeshFilter>().mesh = mesh = new Mesh();
+            mesh.name = "Procedural Grid";
 
-    IEnumerator GenerateHexGrid()
-    {
-        if (gridXSize % 2 == 0)
-        {
-            gridXSize--;
-        }
-        else
-        {
-            print("GXS: " + gridXSize + "% 2 == " + gridXSize % 2);
-        }
-        hexGrid = new GameObject[(gridXSize + 1) * (gridYSize + 1)];
-        int offsetCounter = 0;
-        float hexOffset = 0;
-        for (int i = 0, y = 0; y <= gridYSize; y++)
-        {
-            
-            for (int x = 0; x <= gridXSize; x++, i++)
+            vertices = new Vector3[(gridXSize + 1) * (gridYSize + 1)];
+            Vector2[] uv = new Vector2[vertices.Length];
+            Vector4[] tangents = new Vector4[vertices.Length];
+            Vector4 tangent = new Vector4(1f, 0f, 0f, -1f);
+
+            for (int i = 0, y = 0; y <= gridYSize; y++)
             {
-                
-                offsetCounter++;
-                if (offsetCounter % 2 == 0)
+                for (int x = 0; x <= gridXSize; x++, i++)
                 {
-                    hexOffset = hexAdjust;
-                } 
-                else
-                {
-                    hexOffset = 0;
-                }
+                    vertices[i] = new Vector3(x, 0, y);
+                    uv[i] = new Vector2((float)x / gridXSize, (float)y / gridYSize);
+                    tangents[i] = tangent;
 
-                hexGrid[i] = Instantiate(hexTilePrefab, new Vector3((x * tileOffset.x), 0, (y * tileOffset.z) + hexOffset), Quaternion.identity, this.transform);
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
+                    if (useVisualisation)
                     {
-                        visCounter = 0;
-                        yield return null;
-                    }
-                }
-            }
-        }
-        StartCoroutine(ApplyPerlinNoise());
-        print("hex grid done");
-        yield break;
-    }
-
-    IEnumerator ApplyPerlinNoise ()
-    {
-        if (genType == GenerationType.Mesh)
-        {
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                float noise = (float)NoiseS3D.Noise((vertices[i].x + perlinOffset) * perlinScale, (vertices[i].z + perlinOffset) * perlinScale) * perlinMagnitude;
-                vertices[i].y += noise;
-                mesh.vertices = vertices;
-
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
-                    {
-                        visCounter = 0;
-                        yield return null;
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
                     }
                 }
             }
 
-            StartCoroutine(GenerateNodes());
-        }
-        else if (genType == GenerationType.HexTile)
-        {
-            for (int i = 0; i < hexGrid.Length; i++)
-            {
-                float noise = (float)NoiseS3D.Noise((hexGrid[i].transform.position.x + perlinOffset) * perlinScale, (hexGrid[i].transform.position.z + perlinOffset) * perlinScale) * perlinMagnitude;
-                hexGrid[i].transform.Translate(Vector3.up * noise);
+            yield return null;
 
-                if (useVisualisation)
+            mesh.vertices = vertices;
+            mesh.uv = uv;
+            mesh.tangents = tangents;
+
+            int[] triangles = new int[gridXSize * gridYSize * 6];
+            for (int ti = 0, vi = 0, y = 0; y < gridYSize; y++, vi++)
+            {
+                for (int x = 0; x < gridXSize; x++, ti += 6, vi++)
                 {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
+                    triangles[ti] = vi;
+                    triangles[ti + 3] = triangles[ti + 2] = vi + 1;
+                    triangles[ti + 4] = triangles[ti + 1] = vi + gridXSize + 1;
+                    triangles[ti + 5] = vi + gridXSize + 2;
+                    mesh.triangles = triangles;
+
+                    if (useVisualisation)
                     {
-                        visCounter = 0;
-                        yield return null;
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
                     }
                 }
             }
-            StartCoroutine(ColorMeHexes());
-        }
-        yield break;
-    }
+            yield return null;
+            mesh.RecalculateNormals();
 
-    IEnumerator ColorMeHexes ()
-    {
-        //Until I make a shader for this, its a bit much. Setting back for now, gonna disable land and keep water change. Will still impact performance, but less, especially with GPU batching on. 
-        List<Renderer> rr = new List<Renderer>();
-        float avY = 0;
-        float min = Mathf.Infinity;
-        float max = -Mathf.Infinity;
-        foreach (GameObject go in hexGrid)
-        {
-            rr.Add(go.GetComponentInChildren<Renderer>());
-            avY += go.transform.position.y;
-            float height = go.transform.position.y;
-            if (height < min)
-            {
-                min = height;
-            }
-            if (height > max)
-            {
-                max = height;
-            }
+            StartCoroutine(ApplyPerlinNoise());
+            yield break;
         }
-        //Shader.SetGlobalFloat("_MinHeight", min);
-        //Shader.SetGlobalFloat("_MaxHeight", max);
-        groundMat.SetFloat("_MinHeight", min);
-        groundMat.SetFloat("_MaxHeight", max);
-        avY /= hexGrid.Length;
 
-        for (int i = 0; i < rr.Count; i++)
+        IEnumerator GenerateHexGrid()
         {
-            float height = hexGrid[i].transform.position.y;
-            if (height < waterThreshold)
+            if (gridXSize % 2 == 0)
             {
-                
-                /*
-                rr[i].material.color = waterColor;
-                */
+                gridXSize--;
             }
             else
             {
-                /*
-                float normalised = (height / 2) / (waterThreshold / 2);
-                rr[i].material.color = Color.Lerp(bottomColor, topColor,Mathf.Pow(normalised, colorMod));
-                */
-                landHexes.Add(hexGrid[i]);
-                
-                //TODO ^ that
+                print("GXS: " + gridXSize + "% 2 == " + gridXSize % 2);
             }
-            
-            
-            if (useVisualisation)
+            hexGrid = new GameObject[(gridXSize + 1) * (gridYSize + 1)];
+            int offsetCounter = 0;
+            float hexOffset = 0;
+            for (int i = 0, y = 0; y <= gridYSize; y++)
             {
-                visCounter++;
-                if (visCounter > visCounterTarget)
+
+                for (int x = 0; x <= gridXSize; x++, i++)
                 {
-                    visCounter = 0;
-                    yield return null;
+
+                    offsetCounter++;
+                    if (offsetCounter % 2 == 0)
+                    {
+                        hexOffset = hexAdjust;
+                    }
+                    else
+                    {
+                        hexOffset = 0;
+                    }
+
+                    hexGrid[i] = Instantiate(hexTilePrefab, new Vector3((x * tileOffset.x), 0, (y * tileOffset.z) + hexOffset), Quaternion.identity, this.transform);
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
+                    }
                 }
             }
+            StartCoroutine(ApplyPerlinNoise());
+            print("hex grid done");
+            yield break;
         }
-        print("min: " + min + " max: " + max + " avg: " + avY);
 
-        StartCoroutine(GenerateNodes());
-        yield break;
-    }
-    
-    IEnumerator GenerateNodes ()
-    {
-        if (genType == GenerationType.Mesh)
+        IEnumerator ApplyPerlinNoise()
         {
-            foreach (Vector3 vert in vertices)
+            if (genType == GenerationType.Mesh)
             {
-                float f = Random.Range(0, 100);
-                if (f > obstructionThreshold)
+                for (int i = 0; i < vertices.Length; i++)
                 {
-                    Instantiate(obstructionPrefab, vert, Quaternion.identity, this.transform);
+                    float noise = (float)NoiseS3D.Noise((vertices[i].x + perlinOffset) * perlinScale, (vertices[i].z + perlinOffset) * perlinScale) * perlinMagnitude;
+                    vertices[i].y += noise;
+                    mesh.vertices = vertices;
+
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
+                    }
+                }
+
+                StartCoroutine(GenerateNodes());
+            }
+            else if (genType == GenerationType.HexTile)
+            {
+                for (int i = 0; i < hexGrid.Length; i++)
+                {
+                    float noise = (float)NoiseS3D.Noise((hexGrid[i].transform.position.x + perlinOffset) * perlinScale, (hexGrid[i].transform.position.z + perlinOffset) * perlinScale) * perlinMagnitude;
+                    hexGrid[i].transform.Translate(Vector3.up * noise);
+
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
+                    }
+                }
+                StartCoroutine(ColorMeHexes());
+            }
+            yield break;
+        }
+
+        IEnumerator ColorMeHexes()
+        {
+            //Until I make a shader for this, its a bit much. Setting back for now, gonna disable land and keep water change. Will still impact performance, but less, especially with GPU batching on. 
+            List<Renderer> rr = new List<Renderer>();
+            float avY = 0;
+            float min = Mathf.Infinity;
+            float max = -Mathf.Infinity;
+            foreach (GameObject go in hexGrid)
+            {
+                rr.Add(go.GetComponentInChildren<Renderer>());
+                avY += go.transform.position.y;
+                float height = go.transform.position.y;
+                if (height < min)
+                {
+                    min = height;
+                }
+                if (height > max)
+                {
+                    max = height;
+                }
+            }
+            //Shader.SetGlobalFloat("_MinHeight", min);
+            //Shader.SetGlobalFloat("_MaxHeight", max);
+            groundMat.SetFloat("_MinHeight", min);
+            groundMat.SetFloat("_MaxHeight", max);
+            avY /= hexGrid.Length;
+
+            for (int i = 0; i < rr.Count; i++)
+            {
+                float height = hexGrid[i].transform.position.y;
+                if (height < waterThreshold)
+                {
+
+                    /*
+                    rr[i].material.color = waterColor;
+                    */
                 }
                 else
                 {
-                    Node node = Instantiate(nodePrefab, vert + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                    /*
+                    float normalised = (height / 2) / (waterThreshold / 2);
+                    rr[i].material.color = Color.Lerp(bottomColor, topColor,Mathf.Pow(normalised, colorMod));
+                    */
+                    landHexes.Add(hexGrid[i]);
+
+                    //TODO ^ that
+                }
+
+
+                if (useVisualisation)
+                {
+                    visCounter++;
+                    if (visCounter > visCounterTarget)
+                    {
+                        visCounter = 0;
+                        yield return null;
+                    }
+                }
+            }
+            print("min: " + min + " max: " + max + " avg: " + avY);
+
+            StartCoroutine(GenerateNodes());
+            yield break;
+        }
+
+        IEnumerator GenerateNodes()
+        {
+            if (genType == GenerationType.Mesh)
+            {
+                foreach (Vector3 vert in vertices)
+                {
+                    float f = Random.Range(0, 100);
+                    if (f > obstructionThreshold)
+                    {
+                        Instantiate(obstructionPrefab, vert, Quaternion.identity, this.transform);
+                    }
+                    else
+                    {
+                        Node node = Instantiate(nodePrefab, vert + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
+                        NodeController.controller.nodes.Add(node);
+
+                        node.position = vert;
+                        node.tile = null;
+                    }
+
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
+                    }
+                }
+            }
+            else if (genType == GenerationType.HexTile)
+            {
+                //Generate nodes
+                foreach (GameObject go in landHexes)
+                {
+                    Node node = Instantiate(nodePrefab, go.transform.position + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
                     NodeController.controller.nodes.Add(node);
 
-                    node.position = vert;
-                    node.tile = null;
-                }
+                    node.position = go.transform.position;
+                    node.tile = go.GetComponent<Tile>();
 
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
+                    if (useVisualisation)
                     {
-                        visCounter = 0;
-                        yield return null;
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
                     }
                 }
-            }
-        }
-        else if (genType == GenerationType.HexTile)
-        {
-            //Generate nodes
-            foreach (GameObject go in landHexes)
-            {
-                Node node = Instantiate(nodePrefab, go.transform.position + Vector3.up * 0.75f, Quaternion.identity, this.transform).GetComponent<Node>();
-                NodeController.controller.nodes.Add(node);
 
-                node.position = go.transform.position;
-                node.tile = go.GetComponent<Tile>();
-
-                if (useVisualisation)
+                List<Node> nodesToRemove = new List<Node>();
+                //Generate cities
+                foreach (Node node in NodeController.controller.nodes)
                 {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
+                    Collider[] hits = Physics.OverlapSphere(node.position, cityDistance, obstructionMask);
+                    if (hits.Length > 0)
                     {
-                        visCounter = 0;
-                        yield return null;
+                        //continue;
+                    }
+                    else
+                    {
+                        nodesToRemove.Add(node);
+                        List<Node> neighbours = new List<Node>();
+                        foreach (Node n in NodeController.controller.nodes)
+                        {
+                            if (Vector3.Distance(node.position, n.position) < NodeController.controller.edgeRange)
+                            {
+                                neighbours.Add(n);
+                            }
+                        }
+
+                        foreach (Node n in neighbours)
+                        {
+                            cities.Add(Instantiate(cityPiecePrefab, n.position, Quaternion.identity, this.transform));
+                            nodesToRemove.Add(n);
+                        }
+                    }
+
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
                     }
                 }
-            }
-
-            List<Node> nodesToRemove = new List<Node>();
-            //Generate cities
-            foreach (Node node in NodeController.controller.nodes)
-            {
-                Collider[] hits = Physics.OverlapSphere(node.position, cityDistance, obstructionMask);
-                if (hits.Length > 0)
+                //Set to obstructed and add city details
+                foreach (Node n in nodesToRemove)
                 {
-                    //continue;
+                    //NodeController.controller.nodes.Remove(n);
+                    //Destroy(n.gameObject);
+                    n.tile.Type = Tile.TileType.Obstructed;
+                    n.tile.details.Add(Tile.Aspect.City);
                 }
-                else
+                nodesToRemove.Clear();
+
+                yield return null;
+
+                int counter = 0;
+                //Get tree seeds
+                List<Node> treeNodes = new List<Node>();
+                foreach (Node node in NodeController.controller.nodes)
                 {
+                    counter++;
+                    if (counter % treeCounter == 0)
+                    {
+                        treeNodes.Add(node);
+                    }
+
+                    if (useVisualisation)
+                    {
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
+                    }
+                }
+                //Expand on seeds
+                foreach (Node node in treeNodes)
+                {
+                    forests.Add(Instantiate(forestPiecePrefab, node.position, Quaternion.identity, this.transform));
                     nodesToRemove.Add(node);
                     List<Node> neighbours = new List<Node>();
                     foreach (Node n in NodeController.controller.nodes)
@@ -375,136 +474,74 @@ public class Game_Controller : MonoBehaviour {
 
                     foreach (Node n in neighbours)
                     {
-                        cities.Add(Instantiate(cityPiecePrefab, n.position, Quaternion.identity, this.transform));
+                        forests.Add(Instantiate(forestPiecePrefab, n.position, Quaternion.identity, this.transform));
                         nodesToRemove.Add(n);
                     }
-                }
 
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
+                    if (useVisualisation)
                     {
-                        visCounter = 0;
-                        yield return null;
+                        visCounter++;
+                        if (visCounter > visCounterTarget)
+                        {
+                            visCounter = 0;
+                            yield return null;
+                        }
                     }
                 }
-            }
-            //Set to obstructed and add city details
-            foreach (Node n in nodesToRemove)
-            {
-                //NodeController.controller.nodes.Remove(n);
-                //Destroy(n.gameObject);
-                n.tile.Type = Tile.TileType.Obstructed;
-                n.tile.details.Add(Tile.Aspect.City);
-            }
-            nodesToRemove.Clear();
 
+                //Set obstructed and add forest details
+                foreach (Node n in nodesToRemove)
+                {
+                    //NodeController.controller.nodes.Remove(n);
+                    //Destroy(n.gameObject);
+                    n.tile.Type = Tile.TileType.Obstructed;
+                    n.tile.details.Add(Tile.Aspect.Tree);
+                }
+                nodesToRemove.Clear();
+
+            }
+
+
+            NodeController.controller.DoEdges();
+            yield break;
+        }
+
+        public void StartHidePathing()
+        {
+            if (hidePathingOnFinish)
+            {
+                StartCoroutine(HidePathing());
+            }
+        }
+
+        IEnumerator HidePathing()
+        {
+            NodeController nController = NodeController.controller;
+            foreach (Node n in nController.nodes)
+            {
+                n.gameObject.GetComponent<MeshRenderer>().enabled = false;
+            }
             yield return null;
-
-            int counter = 0;
-            //Get tree seeds
-            List<Node> treeNodes = new List<Node>();
-            foreach (Node node in NodeController.controller.nodes)
+            foreach (NodeEdge edge in nController.edges)
             {
-                counter++;
-                if (counter % treeCounter == 0)
-                {
-                    treeNodes.Add(node);
-                }
-
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
-                    {
-                        visCounter = 0;
-                        yield return null;
-                    }
-                }
+                edge.gameObject.GetComponent<LineRenderer>().enabled = false;
             }
-            //Expand on seeds
-            foreach (Node node in treeNodes)
-            {
-                forests.Add(Instantiate(forestPiecePrefab, node.position, Quaternion.identity, this.transform));
-                nodesToRemove.Add(node);
-                List<Node> neighbours = new List<Node>();
-                foreach (Node n in NodeController.controller.nodes)
-                {
-                    if (Vector3.Distance(node.position, n.position) < NodeController.controller.edgeRange)
-                    {
-                        neighbours.Add(n);
-                    }
-                }
-
-                foreach (Node n in neighbours)
-                {
-                    forests.Add(Instantiate(forestPiecePrefab, n.position, Quaternion.identity, this.transform));
-                    nodesToRemove.Add(n);
-                }
-
-                if (useVisualisation)
-                {
-                    visCounter++;
-                    if (visCounter > visCounterTarget)
-                    {
-                        visCounter = 0;
-                        yield return null;
-                    }
-                }
-            }
-
-            //Set obstructed and add forest details
-            foreach (Node n in nodesToRemove)
-            {
-                //NodeController.controller.nodes.Remove(n);
-                //Destroy(n.gameObject);
-                n.tile.Type = Tile.TileType.Obstructed;
-                n.tile.details.Add(Tile.Aspect.Tree);
-            }
-            nodesToRemove.Clear();
-
+            yield break;
         }
-        
-
-        NodeController.controller.DoEdges();
-        yield break;
+        /*
+        private void OnDrawGizmos()
+        {
+            if (vertices == null)
+            {
+                return;
+            }
+            Gizmos.color = Color.black;
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                Gizmos.DrawSphere(vertices[i], 0.1f);
+            }
+        }
+        */
     }
 
-    public void StartHidePathing ()
-    {
-        if (hidePathingOnFinish)
-        {
-            StartCoroutine(HidePathing());
-        }
-    }
-
-   IEnumerator HidePathing ()
-   {
-        NodeController nController = NodeController.controller;
-        foreach (Node n in nController.nodes)
-        {
-            n.gameObject.GetComponent<MeshRenderer>().enabled = false;
-        }
-        yield return null;
-        foreach (NodeEdge edge in nController.edges)
-        {
-            edge.gameObject.GetComponent<LineRenderer>().enabled = false;
-        }
-        yield break;
-   }
-    /*
-    private void OnDrawGizmos()
-    {
-        if (vertices == null)
-        {
-            return;
-        }
-        Gizmos.color = Color.black;
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            Gizmos.DrawSphere(vertices[i], 0.1f);
-        }
-    }
-    */
 }

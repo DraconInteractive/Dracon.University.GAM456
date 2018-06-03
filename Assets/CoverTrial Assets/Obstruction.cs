@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TryOne
+namespace Cover
 {
-    public class NodeEdge : MonoBehaviour
+    public class Obstruction : MonoBehaviour
     {
 
-        public Node endNode;
     }
 }
 
