@@ -10,6 +10,8 @@ namespace Cover
         public List<Tile> allTiles = new List<Tile>();
         public List<Node> allNodes = new List<Node>();
         public List<Edge> allEdges = new List<Edge>();
+        public List<Character> allEnemies = new List<Character>();
+        public List<Character> allAllies = new List<Character>();
         public GameObject tileContainer;
 
         public float edgeDistance;
@@ -22,6 +24,9 @@ namespace Cover
         public Tile selectedTile;
 
         public bool feed;
+
+        public bool playerTurn = true;
+
         private void Start()
         {
             controller = this;
@@ -31,6 +36,7 @@ namespace Cover
             }
 
         }
+
         [ContextMenu("Wipe Grid")]
         public void WipeGrid()
         {
@@ -151,6 +157,14 @@ namespace Cover
                 if (t.characterToSpawn != null)
                 {
                     t.node.occupant = Instantiate(t.characterToSpawn, t.node.position, Quaternion.identity, characterContainer.transform).GetComponent<Character>();
+                    if (t.node.occupant.faction == Character.Faction.Enemy)
+                    {
+                        allEnemies.Add(t.node.occupant);
+                    }
+                    else if (t.node.occupant.faction == Character.Faction.Player)
+                    {
+                        allAllies.Add(t.node.occupant);
+                    }
                 }
             }
             yield break;
@@ -268,19 +282,36 @@ namespace Cover
 
         public void MDRTile (Tile t)
         {
+            if (!playerTurn)
+            {
+                return;
+            }
             if (selectedTile != null && selectedTile.node.occupant != null)
             {
                 List<Node> path = GeneratePath(selectedTile.node, t.node);
                 if (path != null)
                 {
+                    Character ch = selectedTile.node.occupant;
                     print("Start: " + selectedTile.node.position.ToString() + " | End: " + t.node.position.ToString() + " | PStep One: " + path[0].position.ToString());
-                    selectedTile.node.occupant.MoveTo(path);
+                    if (path.Count >= ch.movePoints)
+                    {
+                        List<Node> pathRange = path.GetRange(0, ch.movePoints);
+                        ch.MoveTo(pathRange);
+                    } else
+                    {
+                        List<Node> pathRange = path.GetRange(0, path.Count);
+                        ch.MoveTo(pathRange);
+                    }
+                    
                     //path[path.Count - 1].occupant = selectedTile.node.occupant;
                     selectedTile.node.occupant = null;
                     //MDTile(GetTileFromNode(path[0]));
+
+                    StartCoroutine(EnemyTurn());
                 }
             }
         }
+
         public void MDCharacter (Character character)
         {
             RaycastHit[] hits = Physics.RaycastAll(new Ray(transform.position, Vector3.down), 3);
@@ -312,6 +343,22 @@ namespace Cover
             return result;
         }
 
+        public Node GetNodeFromWorldPos (Vector3 pos)
+        {
+            Node result = null;
+            float bigDist = Mathf.Infinity;
+            foreach (Node node in allNodes)
+            {
+                float dist = Vector3.Distance(pos, node.position);
+                if (dist < bigDist)
+                {
+                    bigDist = dist;
+                    result = node;
+                }
+            }
+            return result;
+        }
+
         public void SetNodeOccupant (Node newNode, Character character)
         {
             foreach (Node n in allNodes)
@@ -330,6 +377,47 @@ namespace Cover
                     n.occupant = character;
                 }
             }
+        }
+
+        IEnumerator EnemyTurn ()
+        {
+            playerTurn = false;
+            //Do logic
+
+            foreach (Character ch in allEnemies)
+            {
+                float bigDist = Mathf.Infinity;
+                Character target = null;
+
+                foreach (Character c in allAllies)
+                {
+                    float dist = Vector3.Distance(ch.transform.position, c.transform.position);
+                    if (dist < bigDist)
+                    {
+                        bigDist = dist;
+                        target = c;
+                    }
+                }
+
+                List<Node> path = GeneratePath(GetNodeFromWorldPos(ch.transform.position), GetNodeFromWorldPos(target.transform.position));
+                if (path.Count >= ch.movePoints)
+                {
+                    List<Node> pathRange = path.GetRange(0, ch.movePoints);
+                    ch.MoveTo(pathRange);
+                }
+                else
+                {
+                    List<Node> pathRange = path.GetRange(0, path.Count);
+                    ch.MoveTo(pathRange);
+                }
+
+                selectedTile.node.occupant = null;
+            }
+            yield return null;
+
+            playerTurn = true;
+
+            yield break;
         }
         private void OnDrawGizmos()
         {

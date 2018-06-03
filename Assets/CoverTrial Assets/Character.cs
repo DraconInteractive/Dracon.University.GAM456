@@ -6,8 +6,18 @@ namespace Cover
 {
     public class Character : MonoBehaviour
     {
+        public int movePoints;
+        public float movementSpeed;
         Coroutine moveRoutine;
+        public Cover cover;
         
+        public enum Faction
+        {
+            Player, 
+            Enemy
+        };
+
+        public Faction faction;
         // Use this for initialization
         void Start()
         {
@@ -25,16 +35,6 @@ namespace Cover
             Game_Controller.controller.MDCharacter(this);
         }
 
-        public void MoveTo (Vector3 position)
-        {
-            if (moveRoutine != null)
-            {
-                StopCoroutine(moveRoutine);
-            }
-            
-            moveRoutine = StartCoroutine(Move(position));
-        }
-
         public void MoveTo (List<Node> path)
         {
             if (moveRoutine != null)
@@ -45,32 +45,21 @@ namespace Cover
             moveRoutine = StartCoroutine(MoveList(path));
         }
 
-        IEnumerator Move (Vector3 position)
-        {
-            Vector3 start = transform.position;
-            Vector3 end = position;
-            for (float f = 0; f < 1; f += Time.deltaTime)
-            {
-                transform.position = Vector3.Lerp(start, end, f);
-                yield return null;
-            }
-            transform.position = end;
-            yield break;
-        }
-
         IEnumerator MoveList (List<Node> path)
         {
             foreach (Node node in path)
             {
                 Vector3 start = transform.position;
                 Vector3 end = node.position;
-                for (float f = 0; f < 1; f += Time.deltaTime)
+                for (float f = 0; f < 1; f += Time.deltaTime * movementSpeed)
                 {
                     transform.position = Vector3.Lerp(start, end, f);
                     yield return null;
                 }
                 transform.position = end;
                 Game_Controller.controller.SetNodeOccupant(node, this);
+                Game_Controller.controller.MDTile(Game_Controller.controller.GetTileFromNode(node));
+                cover = node.nodeCover;
             }
             yield break;
         }
