@@ -21,10 +21,15 @@ namespace Cover
         Renderer r;
 
         public GameObject characterToSpawn;
+
+        public delegate void OnTileAction();
+        public OnTileAction onTileAction;
+
         private void Start()
         {
             r = GetComponent<Renderer>();
         }
+
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.black;
@@ -86,13 +91,13 @@ namespace Cover
             
         }
 
+        /*
         private void OnMouseEnter()
         {
             if (!Obstructed)
             {
                 Game_Controller.controller.MOTile(this);
             }
-            
         }
 
         private void OnMouseOver()
@@ -110,10 +115,19 @@ namespace Cover
                 
             }
         }
-        
+        */
         public void UnSelectTile ()
         {
             r.material.SetInt("_Selected", 0);
+        }
+
+        public void TileAction ()
+        {
+            if (onTileAction != null)
+            {
+                onTileAction();
+            }
+            
         }
         
     }

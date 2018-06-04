@@ -27,6 +27,9 @@ namespace Cover
 
         public bool playerTurn = true;
 
+        public LayerMask obstructionMask, interactionMask;
+
+        public bool showGrid;
         private void Start()
         {
             controller = this;
@@ -34,8 +37,54 @@ namespace Cover
             {
                 GetTiles();
             }
-
         }
+
+        private void Update()
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, 200, interactionMask))
+            {
+                selectionCylinder.transform.position = hit.transform.position;
+
+                if (Input.GetMouseButtonDown(0))
+                {
+                    Tile t = hit.transform.GetComponent<Tile>();
+                    if (t != null)
+                    {
+                        MDTile(t);
+                    }
+                    else
+                    {
+                        Character c = hit.transform.GetComponent<Character>();
+                        if (c != null)
+                        {
+                            MDCharacter(c);
+                        }
+                        else
+                        {
+                            print(hit.transform.name);
+                        }
+                    }
+                } 
+                else if (Input.GetMouseButtonDown(1))
+                {
+                    Tile t = hit.transform.GetComponent<Tile>();
+                    if (t != null)
+                    {
+                        MDRTile(t);
+                    }
+                }
+
+            }
+
+            if (Input.GetKeyDown(KeyCode.C) && selectedTile != null)
+            {
+                ToggleCrouch();
+            }
+        }
+
+        #region Generation
 
         [ContextMenu("Wipe Grid")]
         public void WipeGrid()
@@ -43,6 +92,22 @@ namespace Cover
             allTiles.Clear();
             allNodes.Clear();
             allEdges.Clear();
+            foreach (Character c in allEnemies)
+            {
+                if (c != null)
+                {
+                    Destroy(c.gameObject);
+                }
+            }
+            allEnemies.Clear();
+            foreach (Character c in allAllies)
+            {
+                if (c != null)
+                {
+                    Destroy(c.gameObject);
+                }
+            }
+            allAllies.Clear();
         }
 
         [ContextMenu("Get Tiles")]
@@ -77,7 +142,7 @@ namespace Cover
             {
                 Node newNode = new Node()
                 {
-                    position = t.transform.position + Vector3.up,
+                    position = t.transform.position + t.transform.up,
                     nodeCover = t.tileCover,
                     obstructed = t.Obstructed
                 };
@@ -121,17 +186,30 @@ namespace Cover
                     float dist = Vector3.Distance(node.position, n.position);
                     if (dist < edgeDistance && n != node)
                     {
-                        node.edges.Add(new Edge()
+                        Edge newEdge = new Edge()
                         {
                             endNode = n,
                             door = new Door()
-                            {
-                                enabled = false,
-                                open = false,
-                                locked = false,
-                                prefab = null
-                            }
-                        });
+                        };
+                        node.edges.Add(newEdge);
+                        allEdges.Add(newEdge);
+                    }
+                }
+            }
+
+            foreach (Node node in allNodes)
+            {
+                foreach (Edge edge in node.edges)
+                {
+                    Ray ray = new Ray(node.position, edge.endNode.position);
+                    RaycastHit hit;
+                    if (Physics.Raycast(ray, out hit, 1.2f, obstructionMask))
+                    {
+                        Obstruction ob = hit.transform.GetComponent<Obstruction>();
+                        if (ob.type == Obstruction.ObType.Door)
+                        {
+                            edge.door = ob.door;
+                        }
                     }
                 }
             }
@@ -157,6 +235,7 @@ namespace Cover
                 if (t.characterToSpawn != null)
                 {
                     t.node.occupant = Instantiate(t.characterToSpawn, t.node.position, Quaternion.identity, characterContainer.transform).GetComponent<Character>();
+                    t.node.occupant.currentTile = t;
                     if (t.node.occupant.faction == Character.Faction.Enemy)
                     {
                         allEnemies.Add(t.node.occupant);
@@ -170,7 +249,7 @@ namespace Cover
             yield break;
         }
 
-        List<Node> GeneratePath (Node start, Node end)
+        public List<Node> GeneratePath (Node start, Node end)
         {
             List<Node> aNodes = allNodes;
             List<Node> finalPath = new List<Node>();
@@ -202,15 +281,31 @@ namespace Cover
                 List<Node> neighbours = new List<Node>();
                 foreach (Edge edge in currentNode.edges)
                 {
-                    if (!edge.endNode.obstructed)
+                    if (edge.door.enabled)
                     {
-                        neighbours.Add(edge.endNode);
+                        if (!edge.endNode.obstructed && !edge.door.locked)
+                        {
+                            neighbours.Add(edge.endNode);
+                        }
                     }
-                    
+                    else
+                    {
+                        if (!edge.endNode.obstructed)
+                        {
+                            neighbours.Add(edge.endNode);
+                        }
+                    }
+
+
                 }
                 foreach (Node neighbour in neighbours)
                 {
                     if (closedSet.Contains(neighbour))
+                    {
+                        continue;
+                    }
+
+                    if (neighbour != end && neighbour.occupant != null)
                     {
                         continue;
                     }
@@ -263,6 +358,9 @@ namespace Cover
             return(path);
         }
 
+        #endregion
+
+        #region Mouse Inputs
         public void MOTile (Tile t)
         {
             selectionCylinder.transform.position = t.transform.position;
@@ -288,43 +386,72 @@ namespace Cover
             }
             if (selectedTile != null && selectedTile.node.occupant != null)
             {
+                float enemyWait = 0;
                 List<Node> path = GeneratePath(selectedTile.node, t.node);
                 if (path != null)
                 {
                     Character ch = selectedTile.node.occupant;
-                    print("Start: " + selectedTile.node.position.ToString() + " | End: " + t.node.position.ToString() + " | PStep One: " + path[0].position.ToString());
-                    if (path.Count >= ch.movePoints)
+                    //print("Start: " + selectedTile.node.position.ToString() + " | End: " + t.node.position.ToString() + " | PStep One: " + path[0].position.ToString());
+                    if (!ch.Crouching)
                     {
-                        List<Node> pathRange = path.GetRange(0, ch.movePoints);
-                        ch.MoveTo(pathRange);
-                    } else
-                    {
-                        List<Node> pathRange = path.GetRange(0, path.Count);
-                        ch.MoveTo(pathRange);
+                        if (path.Count >= ch.movePoints)
+                        {
+                            List<Node> pathRange = path.GetRange(0, ch.movePoints);
+                            ch.MoveTo(pathRange);
+                            enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
+                        }
+                        else
+                        {
+                            List<Node> pathRange = path.GetRange(0, path.Count);
+                            ch.MoveTo(pathRange);
+                            enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
+                        }
                     }
+                    else
+                    {
+                        if (path.Count >= ch.crouchMovePoints)
+                        {
+                            List<Node> pathRange = path.GetRange(0, ch.crouchMovePoints);
+                            ch.MoveTo(pathRange);
+                            enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
+                        }
+                        else
+                        {
+                            List<Node> pathRange = path.GetRange(0, path.Count);
+                            ch.MoveTo(pathRange);
+                            enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
+                        }
+                    }
+                    
                     
                     //path[path.Count - 1].occupant = selectedTile.node.occupant;
                     selectedTile.node.occupant = null;
                     //MDTile(GetTileFromNode(path[0]));
 
-                    StartCoroutine(EnemyTurn());
+                    StartCoroutine(EnemyTurn(enemyWait));
                 }
+            }
+        }
+
+        public void ToggleCrouch ()
+        {
+            
+            if (!playerTurn)
+            {
+                return;
+            }
+
+            if (selectedTile != null && selectedTile.node.occupant != null)
+            {
+                selectedTile.node.occupant.Crouching = !selectedTile.node.occupant.Crouching;
             }
         }
 
         public void MDCharacter (Character character)
         {
-            RaycastHit[] hits = Physics.RaycastAll(new Ray(transform.position, Vector3.down), 3);
-            foreach (RaycastHit hit in hits)
-            {
-                Tile t = hit.transform.GetComponent<Tile>();
-                if (t != null)
-                {
-                    MDTile(t);
-                }
-            }
-
+            MDTile(character.currentTile);
         }
+#endregion
 
         public Tile GetTileFromNode (Node node)
         {
@@ -379,39 +506,18 @@ namespace Cover
             }
         }
 
-        IEnumerator EnemyTurn ()
+        IEnumerator EnemyTurn (float wait)
         {
             playerTurn = false;
             //Do logic
-
+            yield return new WaitForSeconds(wait);
             foreach (Character ch in allEnemies)
             {
-                float bigDist = Mathf.Infinity;
-                Character target = null;
-
-                foreach (Character c in allAllies)
+                ch.StartTurn();
+                while (!ch.turnFinished)
                 {
-                    float dist = Vector3.Distance(ch.transform.position, c.transform.position);
-                    if (dist < bigDist)
-                    {
-                        bigDist = dist;
-                        target = c;
-                    }
+                    yield return null;
                 }
-
-                List<Node> path = GeneratePath(GetNodeFromWorldPos(ch.transform.position), GetNodeFromWorldPos(target.transform.position));
-                if (path.Count >= ch.movePoints)
-                {
-                    List<Node> pathRange = path.GetRange(0, ch.movePoints);
-                    ch.MoveTo(pathRange);
-                }
-                else
-                {
-                    List<Node> pathRange = path.GetRange(0, path.Count);
-                    ch.MoveTo(pathRange);
-                }
-
-                selectedTile.node.occupant = null;
             }
             yield return null;
 
@@ -419,8 +525,13 @@ namespace Cover
 
             yield break;
         }
+
         private void OnDrawGizmos()
         {
+            if (!showGrid)
+            {
+                return;
+            }
             if (allNodes.Count <= 0)
             {
                 return;
@@ -442,6 +553,10 @@ namespace Cover
                     if (n.obstructed || edge.endNode.obstructed)
                     {
                         Gizmos.color = Color.red;
+                    }
+                    else if (edge.door.enabled)
+                    {
+                        Gizmos.color = Color.yellow;
                     }
                     else
                     {
@@ -508,6 +623,54 @@ namespace Cover
         public bool open;
         public bool locked;
         public GameObject prefab;
+        public Color openColor, closedColor, lockedColor;
+        public bool Open
+        {
+            get
+            {
+                return open;
+            }
+
+            set
+            {
+                open = value;
+                if (prefab != null)
+                {
+                    if (value)
+                    {
+                        prefab.GetComponent<Renderer>().material.color = openColor;
+                    }
+                    else
+                    {
+                        prefab.GetComponent<Renderer>().material.color = closedColor;
+                    }
+                }
+                
+                
+            }
+        }
+
+        public bool Locked
+        {
+            get
+            {
+                return locked;
+            }
+
+            set
+            {
+                locked = value;
+                if (value)
+                {
+                    Open = false;
+                    prefab.GetComponent<Renderer>().material.color = lockedColor;
+                } 
+                else
+                {
+                    Open = Open;
+                }
+            }
+        }
     }
 }
 
