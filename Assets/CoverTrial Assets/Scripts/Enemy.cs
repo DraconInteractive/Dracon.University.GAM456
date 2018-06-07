@@ -43,7 +43,7 @@ namespace Cover
                     int dist = GetDistance(controller.GetNodeFromWorldPos(transform.position), controller.GetNodeFromWorldPos(target.transform.position));
                     if (dist < attackDist)
                     {
-                        target.Damage(20, this);
+                        target.Damage(attackDamage, this);
                     }
                     else
                     {

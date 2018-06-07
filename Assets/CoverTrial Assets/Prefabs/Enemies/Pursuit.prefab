@@ -97,6 +97,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movePoints: 2
+  crouchMovePoints: 0
   movementSpeed: 5
   cover:
     enabled: 0
@@ -112,6 +113,9 @@ MonoBehaviour:
   turnFinished: 0
   headOffset: 0.5
   sightDist: 7.5
+  attackStepLimit: 4
+  attackDamage: 20
+  crouching: 0
   type: 0
   attackDist: 40
 --- !u!136 &136654990877153588

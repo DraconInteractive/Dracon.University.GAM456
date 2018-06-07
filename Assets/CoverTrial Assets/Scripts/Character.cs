@@ -29,7 +29,7 @@ namespace Cover
 
         public float headOffset;
         public float sightDist;
-
+        public int attackStepLimit, attackDamage;
         public bool crouching;
 
         public bool Crouching

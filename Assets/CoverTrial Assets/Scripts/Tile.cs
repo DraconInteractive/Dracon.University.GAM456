@@ -25,13 +25,24 @@ namespace Cover
         public delegate void OnTileAction();
         public OnTileAction onTileAction;
 
+        public static bool draw;
         private void Start()
         {
             r = GetComponent<Renderer>();
         }
 
+        [ContextMenu("Toggle Gizmo")]
+        public void ToggleDraw()
+        {
+            draw = !draw;
+        }
+
         private void OnDrawGizmos()
         {
+            if (!draw)
+            {
+                return;
+            }
             Gizmos.color = Color.black;
             if (tileCover.coverDirections.Count == 0 || !tileCover.enabled)
             {

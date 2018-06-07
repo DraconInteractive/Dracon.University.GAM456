@@ -142,6 +142,8 @@ MonoBehaviour:
   turnFinished: 0
   headOffset: 0.5
   sightDist: 10
+  attackStepLimit: 4
+  attackDamage: 20
   crouching: 0
 --- !u!136 &136731627614756802
 CapsuleCollider:
