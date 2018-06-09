@@ -84,6 +84,7 @@ namespace Cover
             }
             obstructionOBJ = hits[0].gameObject;
             obstructionOBJ.transform.parent = this.transform;
+            obstruction = ObstructionType.SomethingToBeAdded;
         }
 
         public bool Obstructed
