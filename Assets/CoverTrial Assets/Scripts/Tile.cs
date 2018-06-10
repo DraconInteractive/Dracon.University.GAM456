@@ -71,6 +71,11 @@ namespace Cover
                         break;
                 }
             }
+            if (characterToSpawn != null)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawCube(transform.position + Vector3.up * 1f, new Vector3(0.25f, 1, 0.25f));
+            }
         }
 
         [ContextMenu("Get Obstruction")]
