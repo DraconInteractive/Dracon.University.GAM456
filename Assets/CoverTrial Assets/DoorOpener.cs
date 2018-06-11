@@ -11,6 +11,7 @@ namespace Cover
         // Update is called once per frame
         public override void TileAction()
         {
+            
             Game_Controller controller = Game_Controller.controller;
             foreach (Node node in controller.allNodes)
             {
@@ -21,6 +22,7 @@ namespace Cover
                         if (!edge.door.locked && !edge.door.open)
                         {
                             edge.door.Open = true;
+                            UIController.controller.AddTextToContainerQueue("Door Opened");
                         }
                     }
                 }

@@ -117,7 +117,7 @@ namespace Cover
 
         public void Damage (int damage, Character origin)
         {
-            
+            UIController.controller.AddTextToContainerQueue("Character '" + gameObject.name + "' damaged for " + damage + " points by " + origin.name);
             if (cover.enabled)
             {
                 Vector3 damageVector = origin.transform.position - transform.position;
@@ -202,7 +202,7 @@ namespace Cover
 
         public void Die ()
         {
-
+            UIController.controller.AddTextToContainerQueue("Character '" + gameObject.name + "' has died");
         }
 
         float SignedAngleBetween(Vector3 a, Vector3 b, Vector3 n)

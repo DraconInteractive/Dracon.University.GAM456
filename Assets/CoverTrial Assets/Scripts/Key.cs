@@ -16,6 +16,7 @@ namespace Cover
 
         public override void TileAction ()
         {
+            
             Game_Controller controller = Game_Controller.controller;
 
             foreach (Node node in controller.allNodes)
@@ -25,6 +26,7 @@ namespace Cover
                     if (edge.door.enabled && edge.door.prefab == door)
                     {
                         edge.door.Locked = false;
+                        UIController.controller.AddTextToContainerQueue("Door Unlocked");
                     }
                 }
             }
