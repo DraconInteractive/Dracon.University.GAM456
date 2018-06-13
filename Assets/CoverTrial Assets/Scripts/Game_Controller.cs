@@ -27,7 +27,7 @@ namespace Cover
 
         public bool playerTurn = true;
 
-        public LayerMask obstructionMask, interactionMask;
+        public LayerMask obstructionMask, interactionMask, wallMask;
 
         public bool showGrid;
         private void Start()
@@ -75,8 +75,14 @@ namespace Cover
                         MDRTile(t);
                     }
                 }
-
             }
+            /*
+            RaycastHit wallHit;
+            if (Physics.Raycast(ray, out wallHit, 200, wallMask))
+            {
+                
+            }
+            */
 
             if (Input.GetKeyDown(KeyCode.C) && selectedTile != null)
             {
@@ -521,7 +527,10 @@ namespace Cover
                     break;
                 }
             }
-
+            if (character == null)
+            {
+                return;
+            }
             foreach (Node n in allNodes)
             {
                 if (n == newNode)
@@ -531,6 +540,7 @@ namespace Cover
             }
         }
 
+        
         IEnumerator EnemyTurn (float wait)
         {
             playerTurn = false;

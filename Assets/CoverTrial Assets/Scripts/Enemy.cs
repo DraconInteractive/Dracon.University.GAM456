@@ -19,6 +19,7 @@ namespace Cover
         public float attackDist;
 
         bool hasSeenPlayer;
+
         public override void StartTurn()
         {
             blocked = "";
@@ -88,7 +89,7 @@ namespace Cover
                     }
                 }
 
-                yield return new WaitForSeconds(0.25f);
+                yield return new WaitForSeconds(0.1f);
             }
             else if (type == EnemyType.Sniper)
             {
@@ -105,7 +106,7 @@ namespace Cover
                     }
                 }
                 
-                yield return new WaitForSeconds(0.25f);
+                yield return new WaitForSeconds(0.1f);
             }
             turnFinished = true;
             yield break;

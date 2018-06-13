@@ -87,7 +87,7 @@ MeshRenderer:
   m_ReflectionProbeUsage: 1
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 327dcc9671aa4d447b9e23878a912004, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -145,6 +145,8 @@ MonoBehaviour:
   attackStepLimit: 4
   attackDamage: 20
   crouching: 0
+  currentHealth: 0
+  maximumHealth: 100
 --- !u!136 &136731627614756802
 CapsuleCollider:
   m_ObjectHideFlags: 1

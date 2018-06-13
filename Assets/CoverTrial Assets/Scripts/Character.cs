@@ -60,6 +60,18 @@ namespace Cover
             }
         }
 
+        public float currentHealth, maximumHealth = 100;
+
+        private void Start()
+        {
+            CharacterStart();
+        }
+
+        public virtual void CharacterStart ()
+        {
+            currentHealth = maximumHealth;
+        }
+
         private void OnMouseDown()
         {
             Game_Controller.controller.MDCharacter(this);
@@ -194,15 +206,28 @@ namespace Cover
                 }
             }
             
-            
             Text fText = Instantiate(floatingText, transform.position + Vector3.up, Quaternion.identity, this.transform).GetComponentInChildren<Text>();
             fText.text = damage.ToString();
+
             print("Damaged: " + damage);
+
+            currentHealth -= damage;
+            if (currentHealth <= 0)
+            {
+                Die();
+            }
         }
 
         public void Die ()
         {
             UIController.controller.AddTextToContainerQueue("Character '" + gameObject.name + "' has died");
+            GetComponentInChildren<Renderer>().material.color = new Color(1, 0, 0, 0.25f);
+
+            Game_Controller c = Game_Controller.controller;
+            c.SetNodeOccupant(c.GetNodeFromWorldPos(transform.position), null);
+            c.allAllies.Remove(this);
+
+            Destroy(this);
         }
 
         float SignedAngleBetween(Vector3 a, Vector3 b, Vector3 n)
