@@ -7,6 +7,7 @@ namespace Village {
     {
         public static VillageController controller;
         public int gridSize;
+        [HideInInspector]
         public List<Node> allNodes = new List<Node>();
         public List<Building> allBuildings = new List<Building>();
 
@@ -78,10 +79,46 @@ namespace Village {
                     n.obstructed = true;
                 }
             }
-            StartCoroutine(GenerateEdges());
+            StartCoroutine(RemoveNodes());
             yield break;
         }
 
+        IEnumerator RemoveNodes ()
+        {
+            for (int i = 0; i < allNodes.Count; i++)
+            {
+                List<Node> surrounding = new List<Node>();
+                //Get surrounding nodes
+                Node topNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(0, 0, 1));
+                Node bottomNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(0, 0, -1));
+                Node leftNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(-1, 0, 0));
+                Node rightNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(1, 0, 0));
+
+                surrounding.Add(topNode);
+                surrounding.Add(bottomNode);
+                surrounding.Add(leftNode);
+                surrounding.Add(rightNode);
+
+                bool obEqual = true;
+
+                foreach (Node nn in surrounding)
+                {
+                    if (allNodes[i].obstructed != nn.obstructed)
+                    {
+                        obEqual = false;
+                        break;
+                    }
+                }
+
+                if (obEqual)
+                {
+                    allNodes.Remove(allNodes[i]);
+                }
+
+            }
+            StartCoroutine(GenerateEdges());
+            yield break;
+        }
         IEnumerator GenerateEdges ()
         {
             foreach (Node n in allNodes)
@@ -145,11 +182,12 @@ namespace Village {
                         continue;
                     }
                     //add conditions here to stop propogation
+                    /*
                     if (neighbour != end )
                     {
                         continue;
                     }
-
+                    */
                     int newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighbour);
                     if (newMovementCostToNeighbour < neighbour.gCost || !openSet.Contains(neighbour))
                     {
@@ -244,6 +282,7 @@ namespace Village {
         {
             if (allNodes.Count <= 0)
             {
+                print("No nodes to get: GNFWP");
                 return null;
             }
 
@@ -281,12 +320,12 @@ namespace Village {
         public Building GetRandomBuilding ()
         {
             Building result = null;
-            result = allBuildings[Random.Range(0, allBuildings.Count - 1)];
+            result = allBuildings[Random.Range(0, allBuildings.Count)];
             return result;
         }
     }
 
-    //[System.Serializable]
+    [System.Serializable]
     public class Node
     {
         public Vector3 position;
@@ -313,7 +352,8 @@ namespace Village {
         {
             MainHall,
             Barracks,
-            Field
+            Field,
+            Inn
         };
 
         public Type buildingType;

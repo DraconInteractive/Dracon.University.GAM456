@@ -9,6 +9,10 @@ namespace Village
         public float heightOffset = 1;
         Coroutine movementRoutine;
 
+        public Node start, end;
+        public Building target;
+
+        public float speed;
         enum State
         {
             Stopped,
@@ -22,7 +26,10 @@ namespace Village
             if (state == State.Stopped)
             {
                 VillageController c = VillageController.controller;
-                List<Node> path = c.GeneratePath(c.GetNodeFromWorldPos(transform.position), c.GetNodeFromWorldPos(c.GetRandomBuilding().position));
+                target = c.GetRandomBuilding();
+                start = c.GetNodeFromWorldPos(transform.position);
+                end = c.GetNodeFromWorldPos(target.GO.transform.position);
+                List<Node> path = c.GeneratePath(start, end);
                 if (path != null)
                 {
                     MoveTo(path);
@@ -39,17 +46,19 @@ namespace Village
                 StopCoroutine(movementRoutine);
             }
 
+            print("Attempting to start movement routine");
             movementRoutine = StartCoroutine(DoMove(path));
         }
 
         IEnumerator DoMove (List<Node> path)
         {
+            print("Movement routine started");
             state = State.Moving;
             foreach (Node n in path)
             {
                 Vector3 start = transform.position;
                 Vector3 end = n.position + Vector3.up * heightOffset;
-                for (float f = 0; f < 1; f += Time.deltaTime)
+                for (float f = 0; f < 1; f += Time.deltaTime * speed)
                 {
                     transform.position = Vector3.Lerp(start, end, f);
                     yield return null;
