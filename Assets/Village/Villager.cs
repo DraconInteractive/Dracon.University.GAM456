@@ -21,24 +21,31 @@ namespace Village
 
         State state = State.Stopped;
 
-        private void Update()
+        private void Start()
         {
-            if (state == State.Stopped)
-            {
-                VillageController c = VillageController.controller;
-                target = c.GetRandomBuilding();
-                start = c.GetNodeFromWorldPos(transform.position);
-                end = c.GetNodeFromWorldPos(target.GO.transform.position);
-                List<Node> path = c.GeneratePath(start, end);
-                if (path != null)
-                {
-                    MoveTo(path);
-                }
-                
-            }   
+            StartCoroutine(Movement());
         }
 
+        IEnumerator Movement ()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(1);
+                if (state == State.Stopped)
+                {
+                    VillageController c = VillageController.controller;
+                    target = c.GetRandomBuilding();
+                    start = c.GetNodeFromWorldPos(transform.position);
+                    end = c.GetNodeFromWorldPos(target.GO.transform.position);
+                    List<Node> path = c.GeneratePath(start, end);
+                    if (path != null)
+                    {
+                        MoveTo(path);
+                    }
 
+                }
+            }
+        }
         public void MoveTo (List<Node> path)
         {
             if (movementRoutine != null)

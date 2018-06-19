@@ -79,46 +79,10 @@ namespace Village {
                     n.obstructed = true;
                 }
             }
-            StartCoroutine(RemoveNodes());
-            yield break;
-        }
-
-        IEnumerator RemoveNodes ()
-        {
-            for (int i = 0; i < allNodes.Count; i++)
-            {
-                List<Node> surrounding = new List<Node>();
-                //Get surrounding nodes
-                Node topNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(0, 0, 1));
-                Node bottomNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(0, 0, -1));
-                Node leftNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(-1, 0, 0));
-                Node rightNode = GetNodeFromWorldPos(allNodes[i].position + new Vector3(1, 0, 0));
-
-                surrounding.Add(topNode);
-                surrounding.Add(bottomNode);
-                surrounding.Add(leftNode);
-                surrounding.Add(rightNode);
-
-                bool obEqual = true;
-
-                foreach (Node nn in surrounding)
-                {
-                    if (allNodes[i].obstructed != nn.obstructed)
-                    {
-                        obEqual = false;
-                        break;
-                    }
-                }
-
-                if (obEqual)
-                {
-                    allNodes.Remove(allNodes[i]);
-                }
-
-            }
             StartCoroutine(GenerateEdges());
             yield break;
         }
+
         IEnumerator GenerateEdges ()
         {
             foreach (Node n in allNodes)
@@ -164,6 +128,11 @@ namespace Village {
                 if (currentNode == end)
                 {
                     List<Node> path = RetracePath(start, end);
+                    if (path != null)
+                    {
+                        List<Node> smoothPath = SmoothPath(path);
+                    }
+                    
                     return path;
                 }
 
@@ -204,6 +173,47 @@ namespace Village {
                 }
             }
             return null;
+        }
+
+        public List<Node> SmoothPath (List<Node> original)
+        {
+            List<Node> smoothPath = new List<Node>(original);
+            print("Smooth begun: " + smoothPath.Count);
+            Node checkPoint = smoothPath[0];
+            Node currentPoint = smoothPath[1];
+            while (currentPoint != null)
+            {
+                Ray ray = new Ray(checkPoint.position, (currentPoint.position - checkPoint.position).normalized);
+                if (Physics.SphereCast(ray, 1, Vector3.Distance(checkPoint.position, currentPoint.position), obstructionMask))
+                {
+                    checkPoint = currentPoint;
+                    if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
+                    {
+                        currentPoint = smoothPath[smoothPath.IndexOf(currentPoint) + 1];
+                    }
+                    else
+                    {
+                        currentPoint = null;
+                    }
+                    
+                    
+                }
+                else
+                {
+                    Node temp = currentPoint;
+                    if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
+                    {
+                        currentPoint = smoothPath[smoothPath.IndexOf(currentPoint) + 1];
+                    } 
+                    else
+                    {
+                        currentPoint = null;
+                    }
+                    smoothPath.Remove(temp);
+                }
+            }
+            print("Smooth Finished: " + smoothPath.Count);
+            return smoothPath;
         }
 
         int GetDistance(Node nodeA, Node nodeB)

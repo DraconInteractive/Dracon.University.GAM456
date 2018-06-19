@@ -27,9 +27,11 @@ namespace Cover
 
         public bool playerTurn = true;
 
-        public LayerMask obstructionMask, interactionMask, wallMask;
+        public LayerMask obstructionMask, interactionMask, wallMask, smoothMask;
 
         public bool showGrid;
+
+        public bool smoothPath = false;
         private void Start()
         {
             controller = this;
@@ -202,21 +204,34 @@ namespace Cover
                     }
                 }
             }
-
+            
             foreach (Node node in allNodes)
             {
+                List<Edge> r = new List<Edge>();
                 foreach (Edge edge in node.edges)
                 {
-                    Ray ray = new Ray(node.position, edge.endNode.position);
+                    Ray ray = new Ray(node.position, edge.endNode.position - node.position);
                     RaycastHit hit;
                     if (Physics.Raycast(ray, out hit, 1.2f, obstructionMask))
                     {
                         Obstruction ob = hit.transform.GetComponent<Obstruction>();
-                        if (ob.type == Obstruction.ObType.Door)
+                        if (ob != null && ob.type == Obstruction.ObType.Door)
                         {
                             edge.door = ob.door;
                         }
                     }
+                    Ray smoothRay = new Ray(node.position, edge.endNode.position - node.position);
+                    Debug.DrawRay(node.position, edge.endNode.position - node.position, Color.yellow, 5);
+                    RaycastHit smoothHit;
+                    if (Physics.Raycast(smoothRay, out smoothHit, 1.0f, wallMask))
+                    {
+                        r.Add(edge);
+                    }
+                }
+
+                foreach (Edge e in r)
+                {
+                    node.edges.Remove(e);
                 }
             }
 
@@ -281,6 +296,10 @@ namespace Cover
                 if (currentNode == end)
                 {
                     List<Node> path = RetracePath(start, end);
+                    if (smoothPath && path != null && path.Count > 2)
+                    {
+                        path = SmoothPath(path);
+                    }
                     return path;
                 }
 
@@ -332,6 +351,49 @@ namespace Cover
                 }
             }
             return null;
+        }
+
+        public List<Node> SmoothPath(List<Node> original)
+        {
+            List<Node> smoothPath = new List<Node>(original);
+            print("Smooth begun: " + smoothPath.Count);
+            Node checkPoint = smoothPath[0];
+            Node currentPoint = smoothPath[1];
+            while (currentPoint != null)
+            {
+                Ray ray = new Ray(checkPoint.position, (currentPoint.position - checkPoint.position).normalized);
+                RaycastHit hit;
+                if (Physics.SphereCast(ray, 1f, out hit, Vector3.Distance(checkPoint.position, currentPoint.position), smoothMask))
+                {
+                    checkPoint = currentPoint;
+                    if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
+                    {
+                        currentPoint = smoothPath[smoothPath.IndexOf(currentPoint) + 1];
+                    }
+                    else
+                    {
+                        currentPoint = null;
+                    }
+
+
+                }
+                else
+                {
+                    Node temp = currentPoint;
+                    if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
+                    {
+                        currentPoint = smoothPath[smoothPath.IndexOf(currentPoint) + 1];
+                    }
+                    else
+                    {
+                        currentPoint = null;
+                    }
+                    smoothPath.Remove(temp);
+                    
+                }
+            }
+            print("Smooth Finished: " + smoothPath.Count);
+            return smoothPath;
         }
 
         int GetDistance(Node nodeA, Node nodeB)
@@ -603,7 +665,7 @@ namespace Cover
         }
     }
 
-    [System.Serializable]
+    //[System.Serializable]
     public class Node
     {
         public Vector3 position;
@@ -768,7 +830,7 @@ namespace Cover
         #endregion
     }
 
-    [System.Serializable]
+    //[System.Serializable]
     public class Cover
     {
         public bool enabled;
@@ -785,7 +847,7 @@ namespace Cover
         public List<Direction> coverDirections = new List<Direction>();
     }
 
-    [System.Serializable]
+    //[System.Serializable]
     public class Edge
     {
         public Node endNode;

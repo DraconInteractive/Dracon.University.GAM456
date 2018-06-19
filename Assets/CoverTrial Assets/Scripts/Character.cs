@@ -8,7 +8,7 @@ namespace Cover
     public class Character : MonoBehaviour
     {
         public int movePoints, crouchMovePoints;
-        public float movementSpeed;
+        public float movementSpeed, rotateSpeed;
         Coroutine moveRoutine;
         public Cover cover;
         public Tile currentTile;
@@ -62,6 +62,16 @@ namespace Cover
 
         public float currentHealth, maximumHealth = 100;
 
+        public enum MoveType
+        {
+            Basic,
+            BasicRot,
+            PhysicsTeleport
+        };
+
+        public MoveType moveType;
+
+        Rigidbody rb;
         private void Start()
         {
             CharacterStart();
@@ -70,6 +80,16 @@ namespace Cover
         public virtual void CharacterStart ()
         {
             currentHealth = maximumHealth;
+            if (moveType == MoveType.PhysicsTeleport)
+            {
+                rb = GetComponent<Rigidbody>();
+                if (rb == null)
+                {
+                    rb = gameObject.AddComponent<Rigidbody>();
+                    rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+                }
+                
+            }
         }
 
         private void OnMouseDown()
@@ -91,14 +111,62 @@ namespace Cover
         {
             foreach (Node node in path)
             {
+                /*
                 Vector3 start = transform.position;
                 Vector3 end = node.position;
-                for (float f = 0; f < 1; f += Time.deltaTime * movementSpeed)
+                for (float f = 0; f < 1 * Vector3.Distance(start, end); f += Time.deltaTime * movementSpeed)
                 {
                     transform.position = Vector3.Lerp(start, end, f);
                     yield return null;
                 }
                 transform.position = end;
+                */
+                if (moveType == MoveType.Basic)
+                {
+                    Vector3 end = node.position;
+                    while ((end - transform.position).magnitude > 0.1f)
+                    {
+                        transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
+                        yield return null;
+                    }
+                }
+                else if (moveType == MoveType.BasicRot)
+                {
+                    Vector3 end = node.position;
+                    
+                    while ((end - transform.position).magnitude > 0.1f)
+                    {
+                        //transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
+                        transform.position += transform.forward * movementSpeed * Time.deltaTime;
+
+                        Vector3 targetDir = (end - transform.position).normalized;
+                        float step = rotateSpeed * Time.deltaTime;
+                        Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0f);
+                        transform.rotation = Quaternion.LookRotation(newDir);
+                        
+                        
+                        yield return null;
+                    }
+                } 
+                else if (moveType == MoveType.PhysicsTeleport)
+                {
+                    Vector3 end = node.position;
+
+                    while ((end - transform.position).magnitude > 0.1f)
+                    {
+                        //transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
+                        rb.MovePosition(transform.position + transform.forward * movementSpeed * Time.fixedDeltaTime);
+
+                        Vector3 targetDir = (end - transform.position).normalized;
+                        float step = rotateSpeed * Time.deltaTime;
+                        Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0f);
+                        transform.rotation = Quaternion.LookRotation(newDir);
+
+
+                        yield return new WaitForFixedUpdate();
+                    }
+                }
+                
                 Game_Controller.controller.SetNodeOccupant(node, this);
                 if (faction == Faction.Player)
                 {
