@@ -156,11 +156,10 @@ namespace Cover
                     {
                         //transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
                         rb.MovePosition(transform.position + transform.forward * movementSpeed * Time.fixedDeltaTime);
-
                         Vector3 targetDir = (end - transform.position).normalized;
                         float step = rotateSpeed * Time.deltaTime;
                         Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0f);
-                        transform.rotation = Quaternion.LookRotation(newDir);
+                        rb.MoveRotation(Quaternion.LookRotation(newDir));
 
 
                         yield return new WaitForFixedUpdate();
