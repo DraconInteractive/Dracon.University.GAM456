@@ -124,33 +124,59 @@ namespace Cover
                 if (moveType == MoveType.Basic)
                 {
                     Vector3 end = node.position;
+                    float eta = (end - transform.position).magnitude * 3;
+                    float timer = 0;
                     while ((end - transform.position).magnitude > 0.1f)
                     {
                         transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
+                        timer += Time.deltaTime;
+                        if (timer > eta)
+                        {
+                            transform.position = end;
+                        }
                         yield return null;
                     }
                 }
                 else if (moveType == MoveType.BasicRot)
                 {
                     Vector3 end = node.position;
-                    
+                    float eta = (end - transform.position).magnitude * 3;
+                    float timer = 0;
+
                     while ((end - transform.position).magnitude > 0.1f)
                     {
                         //transform.position = Vector3.MoveTowards(transform.position, end, movementSpeed * Time.deltaTime);
                         transform.position += transform.forward * movementSpeed * Time.deltaTime;
 
                         Vector3 targetDir = (end - transform.position).normalized;
-                        float step = rotateSpeed * Time.deltaTime;
+                        float step = 0;
+
+
+
+                        timer += Time.deltaTime;
+                        if (timer > eta)
+                        {
+                            step = rotateSpeed * 2 * Time.deltaTime;
+                            if (timer > eta * 2)
+                            {
+                                transform.position = end;
+                            }
+                        } 
+                        else
+                        {
+                            step = rotateSpeed * Time.deltaTime;
+                        }
+
                         Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0f);
                         transform.rotation = Quaternion.LookRotation(newDir);
-                        
-                        
                         yield return null;
                     }
                 } 
                 else if (moveType == MoveType.PhysicsTeleport)
                 {
                     Vector3 end = node.position;
+                    float eta = (end - transform.position).magnitude * 3;
+                    float timer = 0;
 
                     while ((end - transform.position).magnitude > 0.1f)
                     {
@@ -158,10 +184,23 @@ namespace Cover
                         rb.MovePosition(transform.position + transform.forward * movementSpeed * Time.fixedDeltaTime);
                         Vector3 targetDir = (end - transform.position).normalized;
                         float step = rotateSpeed * Time.deltaTime;
+                        
+
+                        timer += Time.deltaTime;
+                        if (timer > eta)
+                        {
+                            step = rotateSpeed * 2 * Time.deltaTime;
+                            if (timer > eta * 2)
+                            {
+                                transform.position = end;
+                            }
+                        }
+                        else
+                        {
+                            step = rotateSpeed * Time.deltaTime;
+                        }
                         Vector3 newDir = Vector3.RotateTowards(transform.forward, targetDir, step, 0.0f);
                         rb.MoveRotation(Quaternion.LookRotation(newDir));
-
-
                         yield return new WaitForFixedUpdate();
                     }
                 }

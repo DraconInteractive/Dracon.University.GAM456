@@ -31,6 +31,8 @@ namespace Cover
             StartCoroutine(DoTurnEnemy());
         }
 
+        int nullCounter = 0;
+
         IEnumerator DoTurnEnemy()
         {
             //print("enemy turn");
@@ -84,6 +86,15 @@ namespace Cover
                                 }
                             }
                             
+                        } 
+                        else
+                        {
+                            nullCounter++;
+                            if (nullCounter > 3)
+                            {
+                                nullCounter = 0;
+                                transform.position = Game_Controller.controller.GetNodeFromWorldPos(transform.position).position;
+                            }
                         }
 
                     }
