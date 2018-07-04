@@ -4,36 +4,43 @@ using UnityEngine;
 
 namespace Cover
 {
+    //main controller for the game. Contains all important functions and variables. 
     public class Game_Controller : MonoBehaviour
     {
+        //singleton reference
         public static Game_Controller controller;
+        //global storage of all generated game statistics. 
         public List<Tile> allTiles = new List<Tile>();
         public List<Node> allNodes = new List<Node>();
         public List<Edge> allEdges = new List<Edge>();
         public List<Character> allEnemies = new List<Character>();
         public List<Character> allAllies = new List<Character>();
+        //parent object of the game tiles
         public GameObject tileContainer;
-
+        //How far a tile can be from another tile (at maximum) to be considered a neighbour.
+        //Neighbours get edges
         public float edgeDistance;
-
+        //Visualisation is used to stagger generation of pathing for slower systems and debugging. 
         public bool useVisualisation;
         public int visCount, visCountTarget;
-
+        //gameobject used to tell player what they have selected, and the gameobject parent of all characters
         public GameObject selectionCylinder, characterContainer;
-
+        //The currently selected tile in game
         public Tile selectedTile;
-
+        //Whether the nav generation should follow its course by itself (aka, FEED through) or wait for manual input.
         public bool feed;
-
+        //is it the players turn / can they act?
         public bool playerTurn = true;
-
+        //Masks used for various raycasts
         public LayerMask obstructionMask, interactionMask, wallMask, smoothMask;
-
+        //show gizmos for pathing
         public bool showGrid;
-
+        //should we smooth the paths, or let them stay as is generated
         public bool smoothPath = false;
+
         private void Start()
         {
+            //set the singleton, and retrieve preexisting tiles
             controller = this;
             if (feed)
             {
@@ -43,6 +50,9 @@ namespace Cover
 
         private void Update()
         {
+            //Every tick, do a raycast to mouse pos. If it hits an interactable, set the selection cylinder position. 
+            //If the player clicks, check what we are on. If its a tile, select it. If its a character, select the characters tile. 
+            //If its a right click, and on a tile, and the player can interact, move the character to the selected tile. 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, 200, interactionMask))
@@ -78,14 +88,7 @@ namespace Cover
                     }
                 }
             }
-            /*
-            RaycastHit wallHit;
-            if (Physics.Raycast(ray, out wallHit, 200, wallMask))
-            {
-                
-            }
-            */
-
+            //if the player presses C, and there is a selected tile, toggle crouch
             if (Input.GetKeyDown(KeyCode.C) && selectedTile != null)
             {
                 ToggleCrouch();
@@ -93,7 +96,7 @@ namespace Cover
         }
 
         #region Generation
-
+        //editor tool, wipe all generated items. Useful for offline generation wiping, not really needed for ingame. 
         [ContextMenu("Wipe Grid")]
         public void WipeGrid()
         {
@@ -117,10 +120,12 @@ namespace Cover
             }
             allAllies.Clear();
         }
-
+        //Editor and game tool. Get all existing tiles. 
         [ContextMenu("Get Tiles")]
         public void GetTiles ()
         {
+            //Search all children of the tile container gameobject for a tile. If the tile is not already in the list, add it. 
+            
             Tile[] tiles = tileContainer.GetComponentsInChildren<Tile>();
             foreach (Tile t in tiles)
             {
@@ -129,23 +134,26 @@ namespace Cover
                     allTiles.Add(t);
                 }
             }
-
+            //Once finished, move on to generating nodes. 
             if (feed)
             {
                 StartNodeGeneration();
             }
         }
-
+        //Used to generate nodes from tiles
         [ContextMenu("Generate Nodes")]
         public void StartNodeGeneration ()
         {
+            //Clear the existing information
+            //Start the coroutine with the proper instructions. 
             allNodes.Clear();
             StartCoroutine(GenerateNodes());
         }
-
+        //^
         IEnumerator GenerateNodes ()
         {
             print("Generating Nodes");
+            //Foreach tile, make a node with the position, and tile cover information. If the tile contains an obstruction, then register this also with the node. 
             foreach (Tile t in allTiles)
             {
                 Node newNode = new Node()
@@ -154,11 +162,12 @@ namespace Cover
                     nodeCover = t.tileCover,
                     obstructed = t.Obstructed
                 };
+                //Add the node to the tile, and to the global storage unit. 
                 t.node = newNode;
                 allNodes.Add(newNode);
 
                 
-
+                //Stagger creation for slow systems / visualisation. 
                 if (useVisualisation)
                 {
                     visCount++;
@@ -169,22 +178,25 @@ namespace Cover
                     }
                 }
             }
-
+            //Once finished, begin generating edges. 
             if (feed)
             {
                 StartEdgeGeneration();
             }
             yield break;
         }
-
+        //Self explanatory?
         [ContextMenu("Generate Edges")]
         public void StartEdgeGeneration ()
         {
             StartCoroutine(GenerateEdges());
         }
-
+        //Begin generating edges from nodes within a distance. Somewhat unoptimised, trying to find a better way to do this. 
         IEnumerator GenerateEdges ()
         {
+            //for each one of our nodes in the global container, clear its edge container. 
+            //Check each node in the global container for distance from the focus node. If it is less than edgeDistance, create a new edge with the end node, and a new Door stat. 
+            //Add the new edge to the global contaienr and to the node.  (technically global container is not needed, but im seeing what possibilities it has for now. 
             print("Generating Edges");
             foreach (Node node in allNodes)
             {
@@ -204,7 +216,8 @@ namespace Cover
                     }
                 }
             }
-            
+            //foreach node in the global container, get the edges that are obstructed, or have a door. If they do, set them to obstructed or add door statistics. 
+            //Also do a check for walls. Remove all edges that pass through a wall. 
             foreach (Node node in allNodes)
             {
                 List<Edge> r = new List<Edge>();
@@ -234,23 +247,26 @@ namespace Cover
                     node.edges.Remove(e);
                 }
             }
-
+            //Once done, start spawning characters
             if (feed)
             {
                 StartSpawnCharacters();
             }
             yield break;
         }
-
+        //What i just said ^
         [ContextMenu("Spawn Characters")]
         public void StartSpawnCharacters ()
         {
             StartCoroutine(SpawnCharacters());
         }
-
+        //Get all the various spawn points and spawn the appropriate characters
         IEnumerator SpawnCharacters ()
         {
             print("Starting Character Spawn");
+            //Foreach tile in the global container, check to see if it is a spawnpoint. 
+            //If it is, spawn the character, and set their tile to the focus. 
+            //Add the new character to the appropriate faction container depending on its Faction variable. 
             foreach (Tile t in allTiles)
             {
                 if (t.characterToSpawn != null)
@@ -267,11 +283,26 @@ namespace Cover
                     }
                 }
             }
+            
             yield break;
         }
-
+        //Function used to generate paths for characters, and UI (eventually)
         public List<Node> GeneratePath (Node start, Node end)
         {
+            //create local reference to global node container. 
+            //We are following the basic A* algorithm here. 
+
+            /*
+             * 2 lists, open and closed. Open has considering nodes, closed has already considered nodes. 
+             * 
+             * put starting node in open list. 
+             * then, as long as we have nodes, 
+             * get the node from the open list with the lowest f (distance to neighbour + distance to target)
+             * if that is the target, return it.
+             * if not, get all the neighbours of the current node.
+             * if they are not in the closed list, evaluate their g and h costs, then add them to open. 
+             * rinse and repeat until target found. 
+             */
             List<Node> aNodes = allNodes;
             List<Node> finalPath = new List<Node>();
 
@@ -295,7 +326,9 @@ namespace Cover
 
                 if (currentNode == end)
                 {
+                    //Once end node is found, retrace up the parent nodes until the path forms.
                     List<Node> path = RetracePath(start, end);
+                    //if the path is long enough and I say so, smooth it, then return it. 
                     if (smoothPath && path != null && path.Count > 2)
                     {
                         path = SmoothPath(path);
@@ -306,6 +339,7 @@ namespace Cover
                 List<Node> neighbours = new List<Node>();
                 foreach (Edge edge in currentNode.edges)
                 {
+                    //dont just check for obstruction, but also for doors. Reject path if door is locked.
                     if (edge.door.enabled)
                     {
                         if (!edge.endNode.obstructed && !edge.door.locked)
@@ -329,7 +363,7 @@ namespace Cover
                     {
                         continue;
                     }
-
+                    //to stop from walking on characters, remove occupied nodes. 
                     if (neighbour != end && neighbour.occupant != null)
                     {
                         continue;
@@ -352,20 +386,28 @@ namespace Cover
             }
             return null;
         }
-
+        //Smooth the generated path. Look for sections without turning or obstructions, and remove unnessecary nodes
         public List<Node> SmoothPath(List<Node> original)
         {
+            //Get a local copy of the path. 
             List<Node> smoothPath = new List<Node>(original);
             print("Smooth begun: " + smoothPath.Count);
+            //setup the original check points
             Node checkPoint = smoothPath[0];
             Node currentPoint = smoothPath[1];
+            //as long as there is a point to operate from:
             while (currentPoint != null)
             {
+                //Do a raycast to see if there is a turn or an obstruction
                 Ray ray = new Ray(checkPoint.position, (currentPoint.position - checkPoint.position).normalized);
                 RaycastHit hit;
+                //Spherecast, so its better at obstruction seeing ("thicc_cast" tm). 
                 if (Physics.SphereCast(ray, 1f, out hit, Vector3.Distance(checkPoint.position, currentPoint.position), smoothMask))
                 {
+                    //if the path cannot continue, set the check point to the current point 
+                    //This allows us to start a new set of checks. 
                     checkPoint = currentPoint;
+                    //Check to see if there are sufficient nodes left in the path. If so, set the currentpoint to the next node in the path. 
                     if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
                     {
                         currentPoint = smoothPath[smoothPath.IndexOf(currentPoint) + 1];
@@ -374,11 +416,12 @@ namespace Cover
                     {
                         currentPoint = null;
                     }
-
-
                 }
                 else
                 {
+                    //If the path continues, store the current point. 
+                    //Check to see if there are enough nodes, and if so set currentpoint to next node in path
+                    //Then, remove this node from minipath
                     Node temp = currentPoint;
                     if ((smoothPath.IndexOf(currentPoint) + 1) < smoothPath.Count)
                     {
@@ -392,10 +435,11 @@ namespace Cover
                     
                 }
             }
+            //return smoothed path
             print("Smooth Finished: " + smoothPath.Count);
             return smoothPath;
         }
-
+        //used to get distance in a special, griddy way that I dont totally understand
         int GetDistance(Node nodeA, Node nodeB)
         {
             int dstX = Mathf.RoundToInt(Mathf.Abs(nodeA.position.x - nodeB.position.x));
@@ -410,17 +454,19 @@ namespace Cover
                 return 14 * dstX + 10 * (dstY - dstX);
             }
         }
-
+        //Used to reconstruct the path from parent nodes. 
         List<Node> RetracePath(Node startNode, Node endNode)
         {
+            //create a new container for the path, and a focus node starting at the end. 
             List<Node> path = new List<Node>();
             Node currentNode = endNode;
-
+            //While there are nodes to consider, add the node to the path, then go to the parent of that node, path wise
             while (currentNode != startNode)
             {
                 path.Add(currentNode);
                 currentNode = currentNode.parent;
             }
+            //This gives us the path backwards, so we just reverse it and return it
             path.Reverse();
 
             return(path);
@@ -429,33 +475,43 @@ namespace Cover
         #endregion
 
         #region Mouse Inputs
+        //Mouse over tile, moves the selection cylinder to the tile. Deprecated, i think?
         public void MOTile (Tile t)
         {
             selectionCylinder.transform.position = t.transform.position;
         }
-
+        //Mouse down on tile
         public void MDTile (Tile t)
         {
-            //Shader.SetGlobalFloat("_Selected", 0);
+            //Unselect the previous tile(s)
             foreach (Tile tile in allTiles)
             {
                 tile.UnSelectTile();
             }
+            //set the shader float "_Selected" to 1, or true. Will make tile go blue. 
             t.GetComponent<Renderer>().material.SetFloat("_Selected", 1);
-
+            //record the selected tile. 
             selectedTile = t;
         }
-
+        //Mouse down (right) on tile
         public void MDRTile (Tile t)
         {
+            //If its not the players turn, go away
             if (!playerTurn)
             {
                 return;
             }
+            //If there is a selected tile, and it is occupied
             if (selectedTile != null && selectedTile.node.occupant != null)
             {
+                //check to see if the click on tile is occupied, and make sure it is not the same as selected
                 if (t.node.occupant != null && t != selectedTile)
                 {
+                    //Generate a path from the clicked to the selected. 
+                    //If there is a path...
+                    //...and it is less than the attack dist, damage the target on the node. 
+                    //...and it is farther than the attack dist, move toward the target. 
+                    //Then, end player turn, and start enemy turn
                     float enemyWait = 0;
                     List<Node> path = GeneratePath(selectedTile.node, t.node);
                     if (path != null)
@@ -477,12 +533,16 @@ namespace Cover
                 }
                 else
                 {
+                    //If the selected tile has no character, generate a path. 
                     float enemyWait = 0;
                     List<Node> path = GeneratePath(selectedTile.node, t.node);
+                    // if the path is valid, get the character and create a local reference. 
                     if (path != null)
                     {
                         Character ch = selectedTile.node.occupant;
-                        //print("Start: " + selectedTile.node.position.ToString() + " | End: " + t.node.position.ToString() + " | PStep One: " + path[0].position.ToString());
+                        //If the character is standing, and the path is further than the walk dist,
+                        //shorten the path to a walkable dist. Then, start enemy turn, waiting for the character to stop walking. 
+                        //If the path is reachable, just move to it. 
                         if (!ch.Crouching)
                         {
                             if (path.Count >= ch.movePoints)
@@ -498,6 +558,7 @@ namespace Cover
                                 enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
                             }
                         }
+                        //If the character is crouching, modify the above to use crouch movepoints, not regular ones
                         else
                         {
                             if (path.Count >= ch.crouchMovePoints)
@@ -513,41 +574,39 @@ namespace Cover
                                 enemyWait = (1 / ch.movementSpeed) * pathRange.Count;
                             }
                         }
-
-
-                        //path[path.Count - 1].occupant = selectedTile.node.occupant;
+                        //set this tile to be non-occupied 
                         selectedTile.node.occupant = null;
-                        //MDTile(GetTileFromNode(path[0]));
-
+                        //start enemy turn
                         StartCoroutine(EnemyTurn(enemyWait));
                     }
                 }
                 
             }
         }
-
+        //Set crouching state to opposite of current. 
         public void ToggleCrouch ()
         {
-            
+            //go away if its not the players turn
             if (!playerTurn)
             {
                 return;
             }
-
+            //if the selected tile is not null, and there is an occuplant, reverse their crouching state. 
             if (selectedTile != null && selectedTile.node.occupant != null)
             {
                 selectedTile.node.occupant.Crouching = !selectedTile.node.occupant.Crouching;
             }
         }
-
+        //Mouse down on character. Do same as tile, this is only here to make selection feel smoother. 
         public void MDCharacter (Character character)
         {
             MDTile(character.currentTile);
         }
 #endregion
-
+        //Helper used to get tile from node. 
         public Tile GetTileFromNode (Node node)
         {
+            //Compare distances from node to tiles. Shortest distance gets returned. 
             float bigDist = Mathf.Infinity;
             Tile result = null;
             foreach (Tile t in allTiles)
@@ -562,9 +621,10 @@ namespace Cover
 
             return result;
         }
-
+        //helper for getting node from world position. 
         public Node GetNodeFromWorldPos (Vector3 pos)
         {
+            //Compare pos to nodes, shortest distance tofrom wins. 
             Node result = null;
             float bigDist = Mathf.Infinity;
             foreach (Node node in allNodes)
@@ -578,9 +638,11 @@ namespace Cover
             }
             return result;
         }
-
+        //Set a nodes occupant
         public void SetNodeOccupant (Node newNode, Character character)
         {
+            //Find the character in the nodes, and set its node to not occupied
+            //Will find a more optimised version of this soon :P
             foreach (Node n in allNodes)
             {
                 if (n.occupant == character)
@@ -589,10 +651,13 @@ namespace Cover
                     break;
                 }
             }
+            //If character cant be found, go away. 
             if (character == null)
             {
                 return;
             }
+            //search nodes for node then set occupant. 
+            //have to do this as node got copied, not referred. 
             foreach (Node n in allNodes)
             {
                 if (n == newNode)
@@ -602,12 +667,14 @@ namespace Cover
             }
         }
 
-        
+        //Perform enemy turn. Cycle through all enemies performing actions then transfer control back to player. 
         IEnumerator EnemyTurn (float wait)
         {
+            //make it so the player cant interact
             playerTurn = false;
-            //Do logic
+            //Wait while player actions finish
             yield return new WaitForSeconds(wait);
+            //foreach Enemy in the global list, perform their action then wait for them to finish. When they all have, give control back to player and end routine. 
             foreach (Character ch in allEnemies)
             {
                 ch.StartTurn();
@@ -622,17 +689,23 @@ namespace Cover
 
             yield break;
         }
-
+        //Draw gizmos for debuggin
         private void OnDrawGizmos()
         {
+            //dont draw if disabled
             if (!showGrid)
             {
                 return;
             }
+            //IF there is no data, dont try to draw
             if (allNodes.Count <= 0)
             {
                 return;
             }
+            //draw a sphere for each node in the global container
+            //Color sphere depending on obstruction status
+            //Draw line for edges
+            //Color edges based on obstructed, or door status. 
             foreach (Node n in allNodes)
             {
                 if (n.obstructed)
@@ -664,10 +737,12 @@ namespace Cover
             }
         }
     }
-
+    //Class for storing node data. Serialization disabled due to editor lag
     //[System.Serializable]
     public class Node
     {
+        //store position, and cover, as well as obstruction. Edges are their own class and stored in a resizable data container. 
+        //Store any characters currently at this node, as well as g,h and f cost associated with pathing. Parent reference let me retrace path after generation. 
         public Vector3 position;
         public Cover nodeCover;
 
@@ -688,7 +763,7 @@ namespace Cover
 
         public Node parent;
 
-        
+        //I dont use this, just made it for the weekly assignment. As such, not going to comment it further than it already was. 
         #region deprecated
         List<Node> visibilityChecks = new List<Node>();
 
@@ -829,11 +904,13 @@ namespace Cover
         }
         #endregion
     }
-
+    //Class for storing node or tile cover. 
     //[System.Serializable]
     public class Cover
     {
+        //enabled lets me do some optimsation. No cover, no need to check angles. 
         public bool enabled;
+        //aforementioned angles. 
         public enum Direction
         {
             Up,
@@ -843,23 +920,26 @@ namespace Cover
             Forward,
             Backward
         };
-
+        //List of which directions this node/tile has cover from. 
         public List<Direction> coverDirections = new List<Direction>();
     }
-
+    //Edge class used for connecting nodes. stores an end, and a possible door. 
     //[System.Serializable]
     public class Edge
     {
         public Node endNode;
         public Door door;
     }
-
+    //Door class to extend edge functionality. 
     [System.Serializable]
     public class Door
     {
+        //enabled serves same purpose as for edge
         public bool enabled;
+        //open tracks status, as does locked. 
         public bool open;
         public bool locked;
+        //prefab is a ref to the door in the scene. useful for anim and coloring based on status. Which is what the colors are for. 
         public GameObject prefab;
         public Color openColor, closedColor, lockedColor;
         public bool Open
@@ -871,6 +951,7 @@ namespace Cover
 
             set
             {
+                //color door based on status
                 open = value;
                 if (prefab != null)
                 {
@@ -887,7 +968,7 @@ namespace Cover
                 
             }
         }
-
+        //^
         public bool Locked
         {
             get

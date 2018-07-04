@@ -1,5 +1,5 @@
 ﻿// xray mouse pos shader test v2.0 - mgear - http://unitycoder.com/blog
-
+//Failed attempt at a coolor see through affect. 
 Shader "UnityLibrary/Effects/XRay2017"
 {
 	Properties 

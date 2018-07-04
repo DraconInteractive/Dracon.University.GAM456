@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Cover
 {
+    //another tile extension. Put in front of a door, so that a closed door will open when a player attempts to go through it. 
     public class DoorOpener : TileAddon
     {
         public GameObject door;
@@ -11,7 +12,7 @@ namespace Cover
         // Update is called once per frame
         public override void TileAction()
         {
-            
+            //Find the door (in a horribly inefficient way), then open it. Tell the ui to tell the player. Then do basic tile stuff. 
             Game_Controller controller = Game_Controller.controller;
             foreach (Node node in controller.allNodes)
             {

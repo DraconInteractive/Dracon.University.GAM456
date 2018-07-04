@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Cover
 {
+    //Attach to walls for see throughability when moused over. 
     public class Wall : MonoBehaviour
     {
         Renderer r;
@@ -18,7 +19,7 @@ namespace Cover
         {
 
         }
-
+        //Mouse go in: set alpha to 0.1. Mouse go out, set alpha to 1. 
         private void OnMouseEnter()
         {
             Color c = r.material.color;

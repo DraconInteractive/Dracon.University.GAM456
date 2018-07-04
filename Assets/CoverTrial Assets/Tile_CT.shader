@@ -1,4 +1,5 @@
-﻿Shader "Custom/Tile_CT" {
+﻿//Shader for coloring tiles. Simple surface shader, with a global float for setting whether selected or not. 
+Shader "Custom/Tile_CT" {
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
