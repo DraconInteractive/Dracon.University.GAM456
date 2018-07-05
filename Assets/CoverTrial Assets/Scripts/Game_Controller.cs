@@ -39,7 +39,7 @@ namespace Cover
         public bool smoothPath = false;
 
         List<Node> highlightedPath = new List<Node>();
-
+        LineRenderer pathRenderer;
         public List<Node> HighlightedPath
         {
             get
@@ -50,6 +50,37 @@ namespace Cover
             set
             {
                 highlightedPath = value;
+
+                if (pathRenderer == null)
+                {
+                    pathRenderer = GetComponent<LineRenderer>();
+
+                    if (pathRenderer == null)
+                    {
+                        print("Failure to retrieve path renderer");
+                        return;
+                    }
+                }
+
+                if (highlightedPath == null)
+                {
+                    pathRenderer.positionCount = 0;
+                }
+                else if (highlightedPath.Count < 2)
+                {
+                    pathRenderer.positionCount = 0;
+                }
+                else
+                {
+                    pathRenderer.positionCount = highlightedPath.Count;
+
+                    for (int i = 0; i < highlightedPath.Count; i++)
+                    {
+                        pathRenderer.SetPosition(i, highlightedPath[i].position);
+                    }
+                }
+
+                /*
                 foreach (Tile t in allTiles)
                 {
                     t.GetComponent<Renderer>().material.SetFloat("_Highlighted", 0);
@@ -61,6 +92,7 @@ namespace Cover
                         GetTileFromNode(n).GetComponent<Renderer>().material.SetFloat("_Highlighted", 1);
                     }
                 }
+                */
             }
         }
 
@@ -355,10 +387,13 @@ namespace Cover
                     //Once end node is found, retrace up the parent nodes until the path forms.
                     List<Node> path = RetracePath(start, end);
                     //if the path is long enough and I say so, smooth it, then return it. 
+                    //Disabling this for highlighting, and because its not worth the expense
+                    /*
                     if (smoothPath && path != null && path.Count > 2)
                     {
                         path = SmoothPath(path);
                     }
+                    */
                     return path;
                 }
 
@@ -529,13 +564,15 @@ namespace Cover
                 return;
             }
             List<Node> path = GeneratePath(selectedTile.node, t.node);
-            if (highlightedPath != null && highlightedPath[0] == path[0] && highlightedPath[HighlightedPath.Count-1] == path [path.Count-1])
+            if (highlightedPath != null && highlightedPath[1] == path[0] && highlightedPath[HighlightedPath.Count-1] == path [path.Count-1])
             {
                 DoPlayerAction(t, path);
             }
             else
             {
-                HighlightedPath = path;
+                List<Node> hPath = new List<Node>(path);
+                hPath.Insert(0, selectedTile.node);
+                HighlightedPath = new List<Node>(hPath);
             }
         }
 
