@@ -38,6 +38,32 @@ namespace Cover
         //should we smooth the paths, or let them stay as is generated
         public bool smoothPath = false;
 
+        List<Node> highlightedPath = new List<Node>();
+
+        public List<Node> HighlightedPath
+        {
+            get
+            {
+                return highlightedPath;
+            }
+
+            set
+            {
+                highlightedPath = value;
+                foreach (Tile t in allTiles)
+                {
+                    t.GetComponent<Renderer>().material.SetFloat("_Highlighted", 0);
+                }
+                if (value != null)
+                {
+                    foreach (Node n in highlightedPath)
+                    {
+                        GetTileFromNode(n).GetComponent<Renderer>().material.SetFloat("_Highlighted", 1);
+                    }
+                }
+            }
+        }
+
         private void Start()
         {
             //set the singleton, and retrieve preexisting tiles
@@ -78,7 +104,7 @@ namespace Cover
                             print(hit.transform.name);
                         }
                     }
-                } 
+                }
                 else if (Input.GetMouseButtonDown(1))
                 {
                     Tile t = hit.transform.GetComponent<Tile>();
@@ -122,10 +148,10 @@ namespace Cover
         }
         //Editor and game tool. Get all existing tiles. 
         [ContextMenu("Get Tiles")]
-        public void GetTiles ()
+        public void GetTiles()
         {
             //Search all children of the tile container gameobject for a tile. If the tile is not already in the list, add it. 
-            
+
             Tile[] tiles = tileContainer.GetComponentsInChildren<Tile>();
             foreach (Tile t in tiles)
             {
@@ -142,7 +168,7 @@ namespace Cover
         }
         //Used to generate nodes from tiles
         [ContextMenu("Generate Nodes")]
-        public void StartNodeGeneration ()
+        public void StartNodeGeneration()
         {
             //Clear the existing information
             //Start the coroutine with the proper instructions. 
@@ -150,9 +176,9 @@ namespace Cover
             StartCoroutine(GenerateNodes());
         }
         //^
-        IEnumerator GenerateNodes ()
+        IEnumerator GenerateNodes()
         {
-            print("Generating Nodes");
+            //print("Generating Nodes");
             //Foreach tile, make a node with the position, and tile cover information. If the tile contains an obstruction, then register this also with the node. 
             foreach (Tile t in allTiles)
             {
@@ -166,7 +192,7 @@ namespace Cover
                 t.node = newNode;
                 allNodes.Add(newNode);
 
-                
+
                 //Stagger creation for slow systems / visualisation. 
                 if (useVisualisation)
                 {
@@ -187,17 +213,17 @@ namespace Cover
         }
         //Self explanatory?
         [ContextMenu("Generate Edges")]
-        public void StartEdgeGeneration ()
+        public void StartEdgeGeneration()
         {
             StartCoroutine(GenerateEdges());
         }
         //Begin generating edges from nodes within a distance. Somewhat unoptimised, trying to find a better way to do this. 
-        IEnumerator GenerateEdges ()
+        IEnumerator GenerateEdges()
         {
             //for each one of our nodes in the global container, clear its edge container. 
             //Check each node in the global container for distance from the focus node. If it is less than edgeDistance, create a new edge with the end node, and a new Door stat. 
             //Add the new edge to the global contaienr and to the node.  (technically global container is not needed, but im seeing what possibilities it has for now. 
-            print("Generating Edges");
+            //print("Generating Edges");
             foreach (Node node in allNodes)
             {
                 node.edges.Clear();
@@ -256,14 +282,14 @@ namespace Cover
         }
         //What i just said ^
         [ContextMenu("Spawn Characters")]
-        public void StartSpawnCharacters ()
+        public void StartSpawnCharacters()
         {
             StartCoroutine(SpawnCharacters());
         }
         //Get all the various spawn points and spawn the appropriate characters
-        IEnumerator SpawnCharacters ()
+        IEnumerator SpawnCharacters()
         {
-            print("Starting Character Spawn");
+            //print("Starting Character Spawn");
             //Foreach tile in the global container, check to see if it is a spawnpoint. 
             //If it is, spawn the character, and set their tile to the focus. 
             //Add the new character to the appropriate faction container depending on its Faction variable. 
@@ -283,11 +309,11 @@ namespace Cover
                     }
                 }
             }
-            
+
             yield break;
         }
         //Function used to generate paths for characters, and UI (eventually)
-        public List<Node> GeneratePath (Node start, Node end)
+        public List<Node> GeneratePath(Node start, Node end)
         {
             //create local reference to global node container. 
             //We are following the basic A* algorithm here. 
@@ -391,7 +417,7 @@ namespace Cover
         {
             //Get a local copy of the path. 
             List<Node> smoothPath = new List<Node>(original);
-            print("Smooth begun: " + smoothPath.Count);
+            //print("Smooth begun: " + smoothPath.Count);
             //setup the original check points
             Node checkPoint = smoothPath[0];
             Node currentPoint = smoothPath[1];
@@ -432,7 +458,7 @@ namespace Cover
                         currentPoint = null;
                     }
                     smoothPath.Remove(temp);
-                    
+
                 }
             }
             //return smoothed path
@@ -469,20 +495,21 @@ namespace Cover
             //This gives us the path backwards, so we just reverse it and return it
             path.Reverse();
 
-            return(path);
+            return (path);
         }
 
         #endregion
 
         #region Mouse Inputs
         //Mouse over tile, moves the selection cylinder to the tile. Deprecated, i think?
-        public void MOTile (Tile t)
+        public void MOTile(Tile t)
         {
             selectionCylinder.transform.position = t.transform.position;
         }
         //Mouse down on tile
-        public void MDTile (Tile t)
+        public void MDTile(Tile t)
         {
+            HighlightedPath = null;
             //Unselect the previous tile(s)
             foreach (Tile tile in allTiles)
             {
@@ -494,14 +521,26 @@ namespace Cover
             selectedTile = t;
         }
         //Mouse down (right) on tile
-        public void MDRTile (Tile t)
+        public void MDRTile(Tile t)
         {
             //If its not the players turn, go away
             if (!playerTurn)
             {
                 return;
             }
-            //If there is a selected tile, and it is occupied
+            List<Node> path = GeneratePath(selectedTile.node, t.node);
+            if (highlightedPath != null && highlightedPath[0] == path[0] && highlightedPath[HighlightedPath.Count-1] == path [path.Count-1])
+            {
+                DoPlayerAction(t, path);
+            }
+            else
+            {
+                HighlightedPath = path;
+            }
+        }
+
+        void DoPlayerAction (Tile t, List<Node> path) {
+            print("doing action");
             if (selectedTile != null && selectedTile.node.occupant != null)
             {
                 //check to see if the click on tile is occupied, and make sure it is not the same as selected
@@ -513,7 +552,7 @@ namespace Cover
                     //...and it is farther than the attack dist, move toward the target. 
                     //Then, end player turn, and start enemy turn
                     float enemyWait = 0;
-                    List<Node> path = GeneratePath(selectedTile.node, t.node);
+                    //List<Node> path = GeneratePath(selectedTile.node, t.node);
                     if (path != null)
                     {
                         Character origin = selectedTile.node.occupant;
@@ -535,7 +574,7 @@ namespace Cover
                 {
                     //If the selected tile has no character, generate a path. 
                     float enemyWait = 0;
-                    List<Node> path = GeneratePath(selectedTile.node, t.node);
+                    //List<Node> path = GeneratePath(selectedTile.node, t.node);
                     // if the path is valid, get the character and create a local reference. 
                     if (path != null)
                     {
@@ -580,7 +619,7 @@ namespace Cover
                         StartCoroutine(EnemyTurn(enemyWait));
                     }
                 }
-                
+
             }
         }
         //Set crouching state to opposite of current. 
