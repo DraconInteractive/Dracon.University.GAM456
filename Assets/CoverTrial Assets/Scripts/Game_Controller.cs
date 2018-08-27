@@ -344,23 +344,10 @@ namespace Cover
 
             yield break;
         }
-        //Function used to generate paths for characters, and UI (eventually)
+        //Remnant of an inadmissable function kept only for reference. Hence, it be commented. 
+        /*
         public List<Node> GeneratePath_OLD(Node start, Node end)
         {
-            //create local reference to global node container. 
-            //We are following the basic A* algorithm here. 
-
-            /*
-             * 2 lists, open and closed. Open has considering nodes, closed has already considered nodes. 
-             * 
-             * put starting node in open list. 
-             * then, as long as we have nodes, 
-             * get the node from the open list with the lowest f (distance to neighbour + distance to target)
-             * if that is the target, return it.
-             * if not, get all the neighbours of the current node.
-             * if they are not in the closed list, evaluate their g and h costs, then add them to open. 
-             * rinse and repeat until target found. 
-             */
             List<Node> aNodes = allNodes;
             List<Node> finalPath = new List<Node>();
 
@@ -388,12 +375,7 @@ namespace Cover
                     List<Node> path = RetracePath(start, end);
                     //if the path is long enough and I say so, smooth it, then return it. 
                     //Disabling this for highlighting, and because its not worth the expense
-                    /*
-                    if (smoothPath && path != null && path.Count > 2)
-                    {
-                        path = SmoothPath(path);
-                    }
-                    */
+                   
                     return path;
                 }
 
@@ -447,7 +429,7 @@ namespace Cover
             }
             return null;
         }
-
+        */
         public List<Node> GeneratePath (Node start, Node end) {
             //Righto, so adapting my own version (even more so than before i suppose?)
 
