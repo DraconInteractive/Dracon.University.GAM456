@@ -345,7 +345,7 @@ namespace Cover
             yield break;
         }
         //Function used to generate paths for characters, and UI (eventually)
-        public List<Node> GeneratePath(Node start, Node end)
+        public List<Node> GeneratePath_OLD(Node start, Node end)
         {
             //create local reference to global node container. 
             //We are following the basic A* algorithm here. 
@@ -444,6 +444,62 @@ namespace Cover
                         }
                     }
                 }
+            }
+            return null;
+        }
+
+        public List<Node> GeneratePath (Node start, Node end) {
+            //Righto, so adapting my own version (even more so than before i suppose?)
+
+            //lists for all, all under consideration, and all already considered
+            List<Node> nodes = new List<Node>(allNodes);
+            List<Node> open = new List<Node>();
+            List<Node> closed = new List<Node>();
+
+            //What are we currently looking at? Will change depending on heuristic calculation
+            Node current = start;
+            //final path
+            List<Node> path = new List<Node>();
+            //make sure open has at least one. 
+            open.Add(start);
+
+            //keep going until we find the path, or until we run out of possible nodes. 
+            while (open.Count > 0) {
+                //A number to measure distance against in a second. 
+                float f = Mathf.Infinity;
+
+                //Calculate distance plus heuristic.
+                //The first is the distance to the final target, the second the distance from the previous node. 
+                foreach (Node n in open) {
+                    n.gCost = GetDistance(n, end);
+                    n.hCost = GetDistance(n, current);
+                }
+                //store our resultant
+                Node leastF = null;
+                //find the node with the lowest fcost and set it to the currently considered node. 
+                foreach (Node n in open) {
+                    if (n.fCost < f) {
+                        f = n.fCost;
+                        leastF = n;
+                    }
+                }
+                current = leastF;
+                //if the currently considered node is the target, get the path and return it. 
+                if (current == end) {
+                    path = RetracePath(start, end);
+                    return path;
+                }
+                //if the node is viable, add it to open, and set its parent. 
+                foreach (Edge e in current.edges) {
+                    if (!e.door.locked && !e.endNode.obstructed && !open.Contains(e.endNode) && !closed.Contains(e.endNode)) {
+                        open.Add(e.endNode);
+                        e.endNode.parent = current;
+                    }
+                }
+                //now that we have considered the node, remove it from consideration, and add it to the considered pile. 
+                open.Remove(current);
+                closed.Add(current);
+
             }
             return null;
         }
